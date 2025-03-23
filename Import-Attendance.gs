@@ -15,6 +15,24 @@ function newSubmission() {
 
 
 /**
+ * Find the most recent head run submission timestamp.
+ * 
+ * @return {Date}  Headrun submission timestamp as Date object.
+ * 
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @date  Dec 1, 2024
+ * @update  Dec 1, 2024
+ */
+
+function getLatestSubmissionTimestamp() {
+  const sheet = ATTENDANCE_SHEET;
+  const lastRow = sheet.getLastRow();
+  const timestamp = sheet.getRange(lastRow, TIMESTAMP_COL).getValue();
+  return new Date(timestamp);
+}
+
+
+/**
  * Gets the names of the attendees by head run and updates their points.
  * 
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)

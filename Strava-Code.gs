@@ -2,93 +2,170 @@ const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/'
 const ACTIVITIES_ENDPOINT = 'athlete/activities'
 const MAPS_FOLDER = 'run_maps'
 
+// SCRIPT PROPERTIES (MAKE SURE THAT NAMES MATCHES ACTUAL STORE)
+const SCRIPT_PROPERTY_KEYS = {
+  clientID: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
+};
+
+const logAndReturn_ = (...msg) => {console.log(msg.join('\n')); return};
+
 /**
- * Maps an Object containing param, value pairs to a query string.
- * Ex: {"param1": val1, "param2": val2} -> "?param1=val1&param2=val2"
- *
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Nov 7, 2024
- * @update  Nov 7, 2024
+ * Strava API playground for user.
  */
 
-function query_object_to_string(query_object) {
-  if (query_object.length === 0) {
-    return ''
+function stravaPlayground() {
+  /** Club member example */
+  function runExample(label) {
+    switch(label) {
+      case 'A' : {
+        /** Club activites example */
+        var endpoint = 'clubs/693906/members'
+        var query_object = {"include_all_efforts" : true};
+        return callStravaAPI_(endpoint, query_object);
+      }
+
+      case 'B' : {
+        /** Club activites example */
+        var endpoint = 'clubs/693906/activities';
+        //var endpoint = 'activities/7851396132';
+        var response = callStravaAPI_(endpoint, {});
+        return getRunStats_(response[0]);
+      }
+
+      case 'C' : {
+        /** Individual athlete example */
+        var endpoint = 'athletes/29784399/stats' // 'athlete/activities';
+        var response = callStravaAPI_(endpoint, {})[0];
+        saveMapToFile_(response, 'example.png');
+        return getRunStats_(response);
+      }
+
+      case 'D' : {
+        /** Activity tagged by headrunner */
+        const timestamp = new Date('2022-09-21 11:01:00');
+        const upperLimit = 3600;
+        saveMapForRun_(timestamp, upperLimit); // Add 1 hour
+      }
+    }
+  }
+  
+  // Choose which function to run and log response
+  const response = runExample('A');
+  console.log(response);
+}
+
+
+/**
+ * Makes an API request to the given endpoint with the given query.
+ * 
+ * @param {string} endpoint  Strava API endpoint.
+ * 
+ * @param {object} [query_object = {}]  Param-value pair.
+ *                                      Defaults to empty object.
+ * 
+ * @return {string}  Response of API call.
+ * 
+ * ### Sample script
+ * ```javascript
+ * const endpoint = 'clubs/693906/activities';
+ * const queryObj = {"param1": val1, "param2": val2};
+ * const response = callStravaAPI(endpoint, queryObj);
+ * ```
+ * 
+ * ### Info
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Nov 7, 2024
+ * @update  Mar 23, 2025
+ */
+
+function callStravaAPI_(endpoint, query_object = {}) {
+  // Set up the service
+  const service = getStravaService_();
+
+  // Verify is access authorized already
+  if (!service.hasAccess()) {
+    // Display authorization url and exit
+    logAndReturn_(
+      'App has no access yet.',
+      'Open the following URL to gain authorization from Strava and re-run the script.',
+      service.getAuthorizationUrl()
+    ); 
   }
 
-  var param_value_list = Object.entries(query_object);
-  var param_strings = param_value_list.map(([param, value]) => `${param}=${value}`);
-  var query_string = param_strings.join('&');
+  // Authorization completed.
+  Logger.log('App has access.');
+  
+  // Get API endpoint
+  endpoint = STRAVA_BASE_URL + endpoint;
+  const query_string = queryObjToString_(query_object);
+
+  const headers = {
+    Authorization: 'Bearer ' + service.getAccessToken()
+  };
+
+  const options = {
+    headers: headers,
+    method: 'GET',
+    muteHttpExceptions: false,
+  };
+
+  // Return Strava API response
+  const urlString = endpoint + query_string;
+  return JSON.parse(UrlFetchApp.fetch(urlString, options));
+}
+
+
+/**
+ * Maps an Object containing param-value pairs to a query string.
+ *  
+ * @param {object} [query_object = {}]  Param-value pair.
+ *                                      Defaults to empty object.
+ * 
+ * @return {string}  String value of query object.
+ * 
+ * ### Sample script
+ * ```javascript
+ * const queryObj = {"param1": val1, "param2": val2};
+ * const ret = queryObjToString(queryObj);
+ * Logger.log(ret)  // "?param1=val1&param2=val2"
+ * ```
+ * 
+ * ### Info
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Nov 7, 2024
+ * @update  Mar 22, 2025
+ */
+
+function queryObjToString_(query_object = {}) {
+  // Check if object empty
+  if (query_object.length === 0) {
+    return '';
+  }
+  const param_value_list = Object.entries(query_object);
+  const param_strings = param_value_list.map(([param, value]) => `${param}=${value}`);
+  const query_string = param_strings.join('&');
   return '?' + query_string;
 }
 
 
 /**
- * Makes an API request to the given endpoint with the given query
- *  Ex: 'clubs/693906/activities', {"param1": val1, "param2": val2} -> API response
- *
+ * Convert a Date timestamp to a Unix Epoch timestamp.
+ * 
+ * @param {Date} timestamp  Timestamp to convert.
+ * @return {integer}  Number of seconds elapsed since January 1, 1970.
+ * 
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Nov 7, 2024
- * @update  Mar 22, 2025
+ * @date  Dec 1, 2024
+ * @update  Dec 1, 2024
  */
 
-function callStravaAPI(endpoint, query_object) {
-  // Set up the service
-  var service = getStravaService();
-
-  if (service.hasAccess()) {
-    Logger.log('App has access.');
-
-    // API Endpoint
-    var endpoint = STRAVA_BASE_URL + endpoint;
-    // Get string in for "?param1=val1&param2=val2&...&paramN=valN"
-    var query_string = query_object_to_string(query_object);
-
-    var headers = {
-      Authorization: 'Bearer ' + service.getAccessToken()
-    };
-
-    var options = {
-      headers: headers,
-      method: 'GET',
-      muteHttpExceptions: false,
-    };
-
-    // Get response from API
-    const urlString = endpoint + query_string;
-    var response = JSON.parse(UrlFetchApp.fetch(urlString, options));
-    return response;
-  }
-  else {
-    Logger.log("App has no access yet.");
-
-    // Open this url to gain authorization from Strava
-    var authorizationUrl = service.getAuthorizationUrl();
-    Logger.log("Open the following URL and re-run the script: %s", authorizationUrl);
-  }
-}
-
-
-function strava_main() {
-  /** Club member example */
-  //var endpoint = 'clubs/693906/members'
-  //var query_object = {"include_all_efforts" : true};
-  //var response = callStravaAPI(endpoint, {});
-
-  /** Club activites example */
-  var endpoint = 'clubs/693906/activities'
-  //var endpoint = 'activities/7851396132' // 13889807290';
-  var response = callStravaAPI(endpoint, {});
-  const runStats = getRunStats(response[0]);
-  console.log(runStats);
-
-  /** Individual athlete example */
-  // var endpoint = 'athletes/29784399/stats' // 'athlete/activities';
-  // var response = callStravaAPI(endpoint, {});
-  // const stats = getRunStats(response[0]);
-  // saveMapToFile(response, 'example.png')
-
-  //console.log(response);
+function getUnixEpochTimestamp_(timestamp) {
+  return Math.floor(timestamp.getTime() / 1000);
 }
 
 
@@ -106,7 +183,7 @@ function strava_main() {
  * @update  Mar 22, 2025
  */
 
-function getRunStats(activity) {
+function getRunStats_(activity) {
   const targetStats = [
     'athlete',
     'name',
@@ -122,7 +199,7 @@ function getRunStats(activity) {
   const found = {};
   targetStats.forEach(stat => {
     if(activity[stat]) { 
-      found[stat] = activity[stat];   // Only add if present in `activity`
+      found[stat] = activity[stat];   // Only collect if defined in `activity`
     }
   });
 
@@ -131,132 +208,133 @@ function getRunStats(activity) {
 
 
 /**
- * Takes a response for a given activity from the Strava API and saves an image of the map to the
- * desired location.
+ * Takes a Strava API response for a given activity and saves an
+ * image of the map to the desired location.
+ * 
+ * @param {object} stravaActivity  A Strava object `SummaryActivity` or `ClubActivity`.
+ * @param {string} filename  Name to save file as.
  * 
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
  * @date  Dec 1, 2024
- * @update  Dec 1, 2024
+ * @update  Mar 25, 2025
  */
 
-function saveMapToFile(api_response, filename) {
-  var polyline = api_response['map']['summary_polyline']
-  var map = Maps.newStaticMap();
-  map.addPath(polyline)
-  DriveApp.createFile(Utilities.newBlob(map.getMapImage(), 'image/png', filename));
-}
+function saveMapToFile_(stravaActivity, filename) {
+  // Extract polyline and add as path to map
+  const runMap = Maps.newStaticMap();
+  const polyline = stravaActivity['map']['summary_polyline'];
+  runMap.addPath(polyline);
 
-/**
- * Finds the most recent head run submission and returns the timestamp as a Date object
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Dec 1, 2024
- * @update  Dec 1, 2024
- */
+  // Save runMap as as image to specified location
+  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', filename)
+  DriveApp.createFile(mapBlob);
 
-function getLatestSubmissionTimestamp() {
-  const sheet = ATTENDANCE_SHEET;
-  const lastRow = sheet.getLastRow();
-  var timestamp = sheet.getRange(lastRow, TIMESTAMP_COL).getValue();
-  return new Date(timestamp);
+  // Display success message
+  Logger.log(`Successfully saved map as ${filename}.png`);
 }
 
 
-/**
- * Converts a Date timestamp to a Unix Epoch timestamp
- * (the number of seconds that have elapsed since January 1, 1970)
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Dec 1, 2024
- * @update  Dec 1, 2024
- */
-
-function getUnixEpochTimestamp(timestamp) {
-  return Math.floor(timestamp.getTime() / 1000);
+function saveMapForLatestRun() {
+  const submissionTimestamp = getLatestSubmissionTimestamp();
+  saveMapForRun_(submissionTimestamp);
 }
 
-
 /**
- * Saves file to MAPS_FOLDER/<Unix Epoch timestamp of submisstion>.png
- * (the number of seconds that have elapsed since January 1, 1970)
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Dec 1, 2024
- * @update  Dec 1, 2024
- */
-
-function getSaveLocation(submissionTime) {
-  return MAPS_FOLDER + '/' + submissionTime.toString() + '.png'
-}
-
-
-/**
- * Gets the most recent head run submission and saves the map
- * of the corresponding Strava activity to MAPS_FOLDER/<Unix Epoch timestamp of submisstion>.png
+ * Get Strava activity of most recent head run submission.
+ * 
+ * Save the map as `MAPS_FOLDER/<Unix Epoch timestamp of submisstion>.png`
+ * 
+ * @param {Date} submissionTimestamp  Date representation of headrun timestamp.
+ * @param {Date} maxDate  Max timestamp for map search.
  *
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
  * @date  Dec 1, 2024
- * @update  Dec 1, 2024
+ * @update  Mar 23, 2025
  */
 
-function getMapForLatestRun() {
-  var submissionTimestamp = getLatestSubmissionTimestamp();
-  var now = new Date();
-  var subEpochTime = getUnixEpochTimestamp(submissionTimestamp);
-  var nowEpochTime = getUnixEpochTimestamp(now);
-  var query_object = { 'after': subEpochTime, 'before': nowEpochTime }
-  const endpoint = ACTIVITIES_ENDPOINT
-  var response = callStravaAPI(endpoint, query_object)
+function saveMapForRun_(submissionTimestamp, maxDate = new Date()) {  
+  // Get string representation of timestamp
+  const submissionTimestampStr = submissionTimestamp.toString();
 
-  if (response.length == 0) {
+  // Get Unix Epoch value of timestamps to define search range
+  const toEpochTime = getUnixEpochTimestamp_(maxDate);
+  const fromEpochTime = getUnixEpochTimestamp_(submissionTimestamp);
+
+  const queryObj = { 'after': fromEpochTime, 'before': toEpochTime };
+
+  const endpoint = ACTIVITIES_ENDPOINT;
+  const response = callStravaAPI_(endpoint, queryObj);
+
+  if (response.length === 0) {
     // Create an instance of ExecutionError with a custom message
-    var errorMessage = "No Strava activity has been found for the run that occured on " + submissionTimestamp.toString();
-    throw new Error(errorMessage); // Throw the ExecutionError
+    const errorMessage = `No Strava activity has been found for the run that occured on ${submissionTimestampStr}`;
+    throw new Error(errorMessage);
   }
 
-  var activity = response[0];
-  var saveLocation = getSaveLocation(subEpochTime);
-  saveMapToFile(activity, saveLocation);
+  const activity = response[0];  // Assume first activity is the target
+  const saveLocation = getSaveLocation(fromEpochTime);
+  saveMapToFile_(activity, saveLocation);
+
+  /** Helper function to get location of file to save */
+  function getSaveLocation(submissionTime) {
+    return MAPS_FOLDER + '/' + submissionTime.toString() + '.png'
+  }
 }
 
 
 /**
  * Configure the service using the OAuth2 library.
  * 
- * @see 'https://github.com/googleworkspace/apps-script-oauth2'
+ * Client ID and Secret stored in script properties.
  * 
+ * @see 'https://github.com/googleworkspace/apps-script-oauth2'
  */
 
-function getStravaService() {
-  // Get CLIENT_ID & CLIENT_SECRET from Script Properties
-  const scriptProperties = PropertiesService.getScriptProperties();
-  const CLIENT_ID = scriptProperties.getProperty(SCRIPT_PROPERTY.clientID);
-  const CLIENT_SECRET = scriptProperties.getProperty(SCRIPT_PROPERTY.clientSecret);
+function getStravaService_() {
+  // Get user-defined keys in Script Property for proper access
+  const myScriptKeys = SCRIPT_PROPERTY_KEYS;
 
-  // Create a new service called "Strava"
+  // Save required script properties 
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const clientId = scriptProperties.getProperty(myScriptKeys.clientID);
+  const clientSecret = scriptProperties.getProperty(myScriptKeys.clientSecret);
+
+  // Define scope of service to request (space-separated for Google services)
+  const scope = 'activity:read_all,profile:read_all';
+
+  // Create and return a new service called "Strava"
   return OAuth2.createService('Strava')
-    // Set the endpoint URL for Strava auth
+
+    /** Set the endpoint URL for Strava auth */
     .setAuthorizationBaseUrl('https://www.strava.com/oauth/authorize')
     .setTokenUrl('https://www.strava.com/oauth/token')
-    // Set the client ID and secret
-    .setClientId(CLIENT_ID)
-    .setClientSecret(CLIENT_SECRET)
-    // Set the name of the callback function in the script referenced
-    // above that should be invoked to complete the OAuth flow.
-    // (see the authCallback function below)
-    .setCallbackFunction('authCallback_')
-    // Set the property store where authorized tokens should be persisted.
-    .setPropertyStore(PropertiesService.getUserProperties())
-    // Set the scopes to request (space-separated for Google services).
-    .setScope('activity:read_all,profile:read_all')
-    ;
 
-  // Handle the callback with helper
-  function authCallback_(request) {
-    var stravaService = getStravaService();
-    var isAuthorized = stravaService.handleCallback(request);
-    if (isAuthorized) {
-      return HtmlService.createHtmlOutput('Success! You can close this tab.');
-    } else {
-      return HtmlService.createHtmlOutput('Denied. You can close this tab');
-    }
-  };
+    /** Set the client ID and secret */
+    .setClientId(clientId)
+    .setClientSecret(clientSecret)
+
+    /** Set the name of the callback function `authCallback_` 
+     * that should be invoked to complete the OAuth flow. */
+    .setCallbackFunction('authCallback_')
+
+    /** Set the property store where authorized tokens should be persisted */
+    .setPropertyStore(PropertiesService.getUserProperties())
+    .setScope(scope)
+  ;
 }
+
+/** Helper to handle callback (Must have global scope in project) */
+function authCallback_(request) {
+  var stravaService = getStravaService_();
+  var isAuthorized = stravaService.handleCallback(request);
+  if (isAuthorized) {
+    return HtmlService.createHtmlOutput('Success! You can close this tab.');
+  } else {
+    return HtmlService.createHtmlOutput('Denied. You can close this tab');
+  }
+};
 
