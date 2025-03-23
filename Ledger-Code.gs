@@ -1,5 +1,7 @@
 /*
-Copyright 2023 Andrey Gonzalez (for McGill Students Running Club)
+Copyright 2024 Jikael Gagnon (for McGill Students Running Club)
+
+Copyright 2025 Andrey Gonzalez (for McGill Students Running Club)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,14 +17,111 @@ limitations under the License.
 */
 
 
-/* SHEET CONSTANTS */
-const SHEET_NAME = 'Member Points';
-const LEDGER_SHEET = SpreadsheetApp.getActiveSpreadsheet();
-const TIMEZONE = getUserTimeZone();
+/**
+ * Return latest head run submission timestamp in `LOG_SHEET`.
+ * 
+ * @return {Date}  Headrun submission timestamp as Date object.
+ * 
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date  Dec 1, 2024
+ * @update  Mar 23, 2025
+ */
 
-function getUserTimeZone() {
-  return Session.getScriptTimeZone();
+function getLatestSubmissionTimestamp() {
+  const sheet = LOG_SHEET;
+  const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
+  const lastRow = getValidLastRow(sheet);
+
+  const timestamp = sheet.getRange(lastRow, timestampCol).getValue();
+  return new Date(timestamp);
 }
+
+
+/**
+ * Find row index of last entry, starting from bottom using while-loop.
+ * 
+ * Used to prevent native `sheet.getLastRow()` from returning empty row.
+ * 
+ * @return {integer}  Returns 1-index of last row in `sheet`.
+ *  
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date  Sept 1, 2024
+ * @update  Mar 23, 2025
+ */
+
+function getValidLastRow(sheet) {
+  let lastRow = sheet.getLastRow();
+  
+  while (sheet.getRange(lastRow, 0).getValue() == "") {
+    lastRow = lastRow - 1;
+  }
+  return lastRow;
+}
+
+
+function getLedgerEntry(email, ledgerData) {
+  const row = findMemberInLedger(email, ledgerData);
+  return ledgerData[row];
+}
+
+/**
+ * Recursive function to search for entry by email in `sheet` using binary search.
+ * Returns row index of `email` in GSheet (1-indexed), or null if not found.
+ * 
+ * @param {string} emailToFind  The email address to search for in `sheet`.
+ * @param {SpreadsheetApp.Sheet} sheet  The sheet to search in.
+ * @param {number} [start=2]  The starting row index for the search (1-indexed). 
+ *                            Defaults to 2 (the second row) to avoid the header row.
+ * @param {number} [end=MASTER_SHEET.getLastRow()]  The ending row index for the search. 
+ *                                                  Defaults to the last row in the sheet.
+ * 
+ * @return {number|null}  Returns the 1-indexed row number where the email is found, 
+ *                        or `null` if the email is not found.
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
+ * @date  Mar 23, 2025
+ * @update  Mar 23, 2025
+ * 
+ * @example `const submissionRowNumber = findMemberByBinarySearch('example@mail.com', getLedgerData());`
+ */
+
+function findMemberInLedger(emailToFind, ledger) {
+  const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;   // Make 0-indexed
+  return findThisEmailBinarySearch();
+
+  /** Define as inner-function to prevent passing `emailToFind` and `ledger` at every call */ 
+  function findThisEmailBinarySearch(start = 1, end = ledger.length) {
+    // Base case: If start index exceeds the end index, the email is not found
+    if (start > end) {
+      return null;
+    }
+
+    // Find the middle point between the start and end indexes
+    const mid = Math.floor((start + end) / 2);
+
+    // Get the email value at the middle row
+    const emailAtMid = ledger[mid][EMAIL_COL];
+
+    // Compare the target email with the middle email
+    /** If the email matches, return the row index in ledger */
+    if (emailAtMid === emailToFind) {
+      return mid;
+
+    /** If the email at the middle row is alphabetically smaller, search the right half. */
+    /** Note: use localeString() to ensure string comparison matches GSheet. */
+    } else if (emailAtMid.localeCompare(emailToFind) === -1) {
+      return findThisEmailBinarySearch(mid + 1, end);
+
+    /** If the email at the middle row is alphabetically larger, search the left half. */
+    } else {
+      return findThisEmailBinarySearch(start, mid - 1);
+    }
+  };
+}
+
+
+// OLD FUNCTIONS
 
 function newSubmission() {
   formatSpecificColumns();
@@ -30,23 +129,6 @@ function newSubmission() {
   updateHeadRunPoints();
 }
 
-
-/**
- * Find the most recent head run submission timestamp.
- * 
- * @return {Date}  Headrun submission timestamp as Date object.
- * 
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Dec 1, 2024
- * @update  Dec 1, 2024
- */
-
-function getLatestSubmissionTimestamp() {
-  const sheet = ATTENDANCE_SHEET;
-  const lastRow = sheet.getLastRow();
-  const timestamp = sheet.getRange(lastRow, TIMESTAMP_COL).getValue();
-  return new Date(timestamp);
-}
 
 
 /**
@@ -59,7 +141,7 @@ function getLatestSubmissionTimestamp() {
 
 function updateHeadRunPoints() {
   // `Head Run Attendance` Google Sheet
-  var sheet = LEDGER_SHEET;
+  var ss = LEDGER_SS;
 
   const TIMESTAMP_COL = 1;
   const HEAD_RUN_COL = 4;
@@ -67,7 +149,7 @@ function updateHeadRunPoints() {
   const IS_ADDED_COL = 6;
   const NAMES_NOT_FOUND_COL = 7;
 
-  const sheetImport = sheet.getSheetByName("Head Run Attendance");
+  const sheetImport = ss.getSheetByName("Head Run Attendance");
   const timestamp = sheetImport.getRange(sheetImport.getLastRow(), TIMESTAMP_COL).getValue();
   const headRun = sheetImport.getRange(sheetImport.getLastRow(), HEAD_RUN_COL).getValue();
   const isAddedRange = sheetImport.getRange(sheetImport.getLastRow(), IS_ADDED_COL);
@@ -114,7 +196,7 @@ function updateHeadRunPoints() {
  */
 
 function tallyPointsOnce() {
-  var sheet = LEDGER_SHEET;
+  var sheet = LEDGER_SS;
 
   // Constants in `Head Run Attendance` Sheet
   const TIMESTAMP_COL = 1;
@@ -177,7 +259,7 @@ function importMembers() {
   const FEE_PAID_COL = 14;
   const MEMBER_ID_COL = 20;
 
-  const pasteSheet = LEDGER_SHEET.getSheetByName(SHEET_NAME);
+  const pasteSheet = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
   const PASTE_MEMBER_ID_COL = 1;
   const PASTE_FEE_PAID_COL = 2;
   const PASTE_FULL_NAME_COL = 3;
@@ -233,7 +315,7 @@ function importMembers() {
  */
 
 function appendHeadRun(nameKey, note) {
-  const sheetPoints = LEDGER_SHEET.getSheetByName(SHEET_NAME);
+  const sheetPoints = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
   const headRunPoints = 50;
 
   var data = sheetPoints.getDataRange().getValues();

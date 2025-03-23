@@ -24,7 +24,7 @@ limitations under the License.
  */
 
 function sortNameByAscending() {
-  var sheet = LEDGER_SHEET.getSheetByName(SHEET_NAME);
+  var sheet = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
   
   // Sort all the way to the last row, without the header row
   const range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
@@ -44,7 +44,7 @@ function sortNameByAscending() {
  */
 
 function formatSpecificColumns() {
-  const sheet = LEDGER_SHEET.getSheetByName("Head Run Attendance");
+  const sheet = LEDGER_SS.getSheetByName("Head Run Attendance");
   
   const rangeListToBold = sheet.getRangeList(['A2:A', 'D2:D']);
   rangeListToBold.setFontWeight('bold');  // Set ranges to bold
@@ -59,7 +59,7 @@ function formatSpecificColumns() {
   rangeIsAdded.insertCheckboxes();  // Add checkbox
 
   // Formats only last row of attendees
-  var attendeesCell = sheet.getRange(sheet.getLastRow(), 5);
+  var attendeesCell = sheet.getRange(getValidLastRow(sheet), 5);
   
   if(attendeesCell.toString().length > 1) {
     var splitArray = attendeesCell.getValue().split('\n');  // split the string into an array;

@@ -1,11 +1,11 @@
 const PROPERTY_STORE = PropertiesService.getScriptProperties();
-const PK_API_KEY = PROPERTY_STORE.getProperty('PK_API_KEY');
-const PK_API_SECRET = PROPERTY_STORE.getProperty('PK_API_SECRET');
+const PK_API_KEY = () => PROPERTY_STORE.getProperty('PK_API_KEY');
+const PK_API_SECRET = () => PROPERTY_STORE.getProperty('PK_API_SECRET');
 
 function getPasskitResponse() {
   // Generate PassKit auth token for an API call
-  const apiKey = PK_API_KEY;
-  const apiSecret = PK_API_SECRET;
+  const apiKey = PK_API_KEY();
+  const apiSecret = PK_API_SECRET();
   var token = generateJWT_(apiKey, apiSecret);
   //Logger.log(token);
   

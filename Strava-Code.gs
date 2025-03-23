@@ -208,7 +208,7 @@ function getUnixEpochTimestamp_(timestamp) {
 function getRunStats_(activity) {
   const targetStats = [
     'athlete',
-    'name',
+    'name',   // Strava Activity name
     'distance',
     'moving_time',
     'elapsed_time',
