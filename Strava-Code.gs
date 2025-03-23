@@ -1,3 +1,21 @@
+/*
+Copyright 2024 Jikael Gagnon (for McGill Students Running Club)
+
+Copyright 2025 Andrey Gonzalez (for McGill Students Running Club)
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/'
 const ACTIVITIES_ENDPOINT = 'athlete/activities'
 const MAPS_FOLDER = 'run_maps'
@@ -8,7 +26,9 @@ const SCRIPT_PROPERTY_KEYS = {
   clientSecret: 'CLIENT_SECRET',
 };
 
-const logAndReturn_ = (...msg) => {console.log(msg.join('\n')); return};
+// Simple logging of multi-line message. Improves readability in code.
+const prettyLog = (...msg) => console.log(msg.join('\n'));
+
 
 /**
  * Strava API playground for user.
@@ -59,6 +79,8 @@ function stravaPlayground() {
 /**
  * Makes an API request to the given endpoint with the given query.
  * 
+ * Inspired by original function `run` in `apps-script-oauth2/samples/Strava.gs`
+ * 
  * @param {string} endpoint  Strava API endpoint.
  * 
  * @param {object} [query_object = {}]  Param-value pair.
@@ -88,7 +110,7 @@ function callStravaAPI_(endpoint, query_object = {}) {
   // Verify is access authorized already
   if (!service.hasAccess()) {
     // Display authorization url and exit
-    logAndReturn_(
+    return prettyLog(
       'App has no access yet.',
       'Open the following URL to gain authorization from Strava and re-run the script.',
       service.getAuthorizationUrl()
@@ -207,6 +229,12 @@ function getRunStats_(activity) {
 }
 
 
+function saveMapForLatestRun() {
+  const submissionTimestamp = getLatestSubmissionTimestamp();
+  saveMapForRun_(submissionTimestamp);
+}
+
+
 /**
  * Takes a Strava API response for a given activity and saves an
  * image of the map to the desired location.
@@ -235,11 +263,6 @@ function saveMapToFile_(stravaActivity, filename) {
   Logger.log(`Successfully saved map as ${filename}.png`);
 }
 
-
-function saveMapForLatestRun() {
-  const submissionTimestamp = getLatestSubmissionTimestamp();
-  saveMapForRun_(submissionTimestamp);
-}
 
 /**
  * Get Strava activity of most recent head run submission.
@@ -284,57 +307,4 @@ function saveMapForRun_(submissionTimestamp, maxDate = new Date()) {
     return MAPS_FOLDER + '/' + submissionTime.toString() + '.png'
   }
 }
-
-
-/**
- * Configure the service using the OAuth2 library.
- * 
- * Client ID and Secret stored in script properties.
- * 
- * @see 'https://github.com/googleworkspace/apps-script-oauth2'
- */
-
-function getStravaService_() {
-  // Get user-defined keys in Script Property for proper access
-  const myScriptKeys = SCRIPT_PROPERTY_KEYS;
-
-  // Save required script properties 
-  const scriptProperties = PropertiesService.getScriptProperties();
-  const clientId = scriptProperties.getProperty(myScriptKeys.clientID);
-  const clientSecret = scriptProperties.getProperty(myScriptKeys.clientSecret);
-
-  // Define scope of service to request (space-separated for Google services)
-  const scope = 'activity:read_all,profile:read_all';
-
-  // Create and return a new service called "Strava"
-  return OAuth2.createService('Strava')
-
-    /** Set the endpoint URL for Strava auth */
-    .setAuthorizationBaseUrl('https://www.strava.com/oauth/authorize')
-    .setTokenUrl('https://www.strava.com/oauth/token')
-
-    /** Set the client ID and secret */
-    .setClientId(clientId)
-    .setClientSecret(clientSecret)
-
-    /** Set the name of the callback function `authCallback_` 
-     * that should be invoked to complete the OAuth flow. */
-    .setCallbackFunction('authCallback_')
-
-    /** Set the property store where authorized tokens should be persisted */
-    .setPropertyStore(PropertiesService.getUserProperties())
-    .setScope(scope)
-  ;
-}
-
-/** Helper to handle callback (Must have global scope in project) */
-function authCallback_(request) {
-  var stravaService = getStravaService_();
-  var isAuthorized = stravaService.handleCallback(request);
-  if (isAuthorized) {
-    return HtmlService.createHtmlOutput('Success! You can close this tab.');
-  } else {
-    return HtmlService.createHtmlOutput('Denied. You can close this tab');
-  }
-};
 
