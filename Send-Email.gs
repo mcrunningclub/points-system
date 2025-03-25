@@ -217,3 +217,24 @@ function mailMemberPoints_(trimmedName, email, points) {
   // Log confirmation for the sent email with values for each variable
   Logger.log(`Email sent to ${trimmedName} at ${email} with ${points} points.`);
 }
+
+
+
+
+function sendTestEmail() {
+  const template = HtmlService.createTemplateFromFile('Stats Email Template');
+
+  // Returns string content from populated html template
+  const templateHTML = template.evaluate().getContent();
+
+  // Construct and send the email
+  const subject = `Your Run Recap`;
+
+  MailApp.sendEmail({
+    //to: email,
+    to: 'andreysebastian10.g@gmail.com',
+    subject: subject,
+    htmlBody: templateHTML
+  });
+
+}
