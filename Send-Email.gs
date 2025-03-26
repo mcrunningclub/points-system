@@ -228,11 +228,12 @@ function sendTestEmail() {
   const templateHTML = template.evaluate().getContent();
 
   // Construct and send the email
-  const subject = `Your Run Recap`;
+  const subject = `Your Run Recap TEST`;
 
   MailApp.sendEmail({
     //to: email,
     to: 'andreysebastian10.g@gmail.com',
+    cc: 'andrey.gonzalez@mail.mcgill.ca',
     subject: subject,
     htmlBody: templateHTML
   });
