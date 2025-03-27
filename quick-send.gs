@@ -1,6 +1,3 @@
-// To learn how to use this script, refer to the documentation:
-// https://developers.google.com/apps-script/samples/automations/mail-merge
-
 /*
 Copyright 2022 Martin Hawksey
 
@@ -24,9 +21,26 @@ limitations under the License.
 function testFunctionRuntime() {
   // Record the start time
   const startTime = new Date().getTime();
+
+  const mapURL = "https://ci3.googleusercontent.com/meips/ADKq_NakzAUqzW5AZ1ozUJxq9mK-3mXMVRAIKtJIi8zKzAZO8m4Ujk8te5AX-ltQwexv8lqG2KxcoPBxczXc3qSVuZuVHmeswrDvU_z3b39eaTY_XCFvMcJzOG2yAxl0ijjSQ9usPXjp9s-iXBMwgVYZwl5rA4hBF092J0S8GXby5fpVg_pg4zYjB4av=s0-d-e1-ft#https://ettnone.stripocdn.email/content/guids/CABINET_acbee75b9fd34b53f276b53f6a26594e/images/98071559039973002.png";
   
   // Call the function you want to test
-  sendEmails();
+  const data = {
+    'FIRST_NAME' : 'Andrey',
+    'TPOINTS' : '50',
+    'TWEEKS' : '1',
+    'TRUNS' : '4',
+    'DISTANCE' : '10.9',
+    'DURATION' : '31',
+    'PACE' : '5:49',
+    'ELEVATION' : '+30',
+    'MSPEED' : '12',
+    'STRAVA_MAP_URL' : mapURL,
+    'POINTS' : '50',
+    'THIS_YEAR' : '2025',
+  }
+  //sendEmail_(data);
+  sendEmailQuick(data);
   
   // Record the end time
   const endTime = new Date().getTime();
@@ -38,13 +52,41 @@ function testFunctionRuntime() {
   Logger.log(`Function runtime: ${runtime} ms`);
 }
 
+function sendEmailQuick(data) {
+  if (getCurrentUserEmail_() != MCRUN_EMAIL) {
+    throw new Error ('Please switch to the McRUN Google Account before sending emails');
+  }
+
+  const emailTemplate = STATS_EMAIL_OBJ;
+
+  try {
+    const msgObj = fillInTemplateFromObject_(emailTemplate, data);
+
+    MailApp.sendEmail(
+      'andreysebastian10.g@gmail.com', 
+      'test: ' + emailTemplate.subject,
+      msgObj.text, 
+      {
+        htmlBody: msgObj.html,
+      }
+    );
+
+  } catch(e) {
+    return Logger.log(e);
+  }
+}
+
 
 /**
  * Sends emails from sheet data.
  * @param {string} subjectLine (optional) for the email draft message
  * @param {Sheet} sheet to read data from
 */
-function sendEmails() {
+function sendEmail_(data) {
+  if (getCurrentUserEmail_() != MCRUN_EMAIL) {
+    throw new Error ('Please switch to the McRUN Google Account before sending emails');
+  }
+  
   const subjectLine = "Here's your post-run report! 🙌";
 
   // Gets the draft Gmail message to use as a template
@@ -52,19 +94,20 @@ function sendEmails() {
 
   // Only sends emails if email_sent cell is blank and not hidden by a filter
   try {
-    const msgObj = emailTemplate.message// fillInTemplateFromObject_(emailTemplate.message, row);
+    //const msgObj = emailTemplate.message// 
+    const msgObj = fillInTemplateFromObject_(emailTemplate.message, data['FIRST_NAME'], data);
 
-    // See https://developers.google.com/apps-script/reference/gmail/gmail-app#sendEmail(String,String,String,Object)
     MailApp.sendEmail(
       'andreysebastian10.g@gmail.com', 
-      'test email', 
+      'test: ' + subjectLine,
       msgObj.text, 
       {
         htmlBody: msgObj.html,
         attachments: emailTemplate.attachments,
-        inlineImages: emailTemplate.inlineImages
+        inlineImages: emailTemplate.inlineImages,
       }
     );
+
   } catch(e) {
     return Logger.log(e);
   }
@@ -108,7 +151,7 @@ function sendEmails() {
         message: {
           subject: subject_line, 
           text: msg.getPlainBody(), 
-          html:htmlBody 
+          html: htmlBody 
           }, 
           attachments: attachments, 
           inlineImages: inlineImagesObj 
@@ -130,41 +173,44 @@ function sendEmails() {
       }
     }
   }
-
-  /**
-   * Fill template string with data object
-   * @see https://stackoverflow.com/a/378000/1027723
-   * @param {string} template string containing {{}} markers which are replaced with data
-   * @param {object} data object used to replace {{}} markers
-   * @return {object} message replaced with data
-  */
-  function fillInTemplateFromObject_(template, data) {
-    // We have two templates one for plain text and the html body
-    // Stringifing the object means we can do a global replace
-    let template_string = JSON.stringify(template);
-
-    // Token replacement
-    template_string = template_string.replace(/{{[^{}]+}}/g, key => {
-      return escapeData_(data[key.replace(/[{}]+/g, "")] || "");
-    });
-    return  JSON.parse(template_string);
-  }
-
-  /**
-   * Escape cell data to make JSON safe
-   * @see https://stackoverflow.com/a/9204218/1027723
-   * @param {string} str to escape JSON special characters from
-   * @return {string} escaped string
-  */
-  function escapeData_(str) {
-    return str
-      .replace(/[\\]/g, '\\\\')
-      .replace(/[\"]/g, '\\\"')
-      .replace(/[\/]/g, '\\/')
-      .replace(/[\b]/g, '\\b')
-      .replace(/[\f]/g, '\\f')
-      .replace(/[\n]/g, '\\n')
-      .replace(/[\r]/g, '\\r')
-      .replace(/[\t]/g, '\\t');
-  };
 }
+
+/**
+ * Fill template string with data object
+ * @see https://stackoverflow.com/a/378000/1027723
+ * @param {string} template string containing {{}} markers which are replaced with data
+ * @param {object} data object used to replace {{}} markers
+ * @return {object} message replaced with data
+*/
+function fillInTemplateFromObject_(template, data) {
+  // We have two templates one for plain text and the html body
+  // Stringifing the object means we can do a global replace
+  let template_string = JSON.stringify(template);
+
+  // Token replacement
+  template_string = template_string.replace(/{{[^{{}}]+}}/g, key => {
+    return escapeData_(data[key.replace(/[{{}}]+/g, "")] || "");
+  });
+
+
+  return JSON.parse(template_string);
+}
+
+/**
+ * Escape cell data to make JSON safe
+ * @see https://stackoverflow.com/a/9204218/1027723
+ * @param {string} str to escape JSON special characters from
+ * @return {string} escaped string
+*/
+function escapeData_(str) {
+  return str
+    .replace(/[\\]/g, '\\\\')
+    .replace(/[\"]/g, '\\\"')
+    .replace(/[\/]/g, '\\/')
+    .replace(/[\b]/g, '\\b')
+    .replace(/[\f]/g, '\\f')
+    .replace(/[\n]/g, '\\n')
+    .replace(/[\r]/g, '\\r')
+    .replace(/[\t]/g, '\\t');
+};
+
