@@ -26,8 +26,21 @@ const SCRIPT_PROPERTY_KEYS = {
   clientSecret: 'CLIENT_SECRET',
 };
 
+const LOG_TARGETS = {
+  'athlete' : LOG_INDEX.STRAVA_ACCOUNT,
+  'name' : LOG_INDEX.STRAVA_ACTIVITY_NAME,
+  'distance' : LOG_INDEX.DISTANCE_STRAVA,
+  'elapsed_time' : LOG_INDEX.ELAPSED_TIME,
+  'average_speed' : LOG_INDEX.PACE,
+  'max_speed' : LOG_INDEX.MAX_SPEED,
+  'total_elevation_gain' : LOG_INDEX.ELEVATION,
+  'map' : LOG_INDEX.MAP_POLYLINE,
+  'mapUrl' : LOG_INDEX.MAP_URL,
+};
+
+
 // Simple logging of multi-line message. Improves readability in code.
-const prettyLog = (...msg) => console.log(msg.join('\n'));
+const prettyLog_ = (...msg) => console.log(msg.join('\n'));
 
 
 /**
@@ -50,29 +63,98 @@ function stravaPlayground() {
         var endpoint = 'clubs/693906/activities';
         //var endpoint = 'activities/7851396132';
         var response = callStravaAPI_(endpoint, {});
-        return getRunStats_(response[0]);
+        return extractRunStats_(response[0]);
       }
 
       case 'C' : {
         /** Individual athlete example */
         var endpoint = 'athletes/29784399/stats' // 'athlete/activities';
         var response = callStravaAPI_(endpoint, {})[0];
-        saveMapToFile_(response, 'example.png');
-        return getRunStats_(response);
+        getMapBlob(response['map']['summary_polyline'], 'example.png');
+        return extractRunStats_(response);
       }
 
       case 'D' : {
-        /** Activity tagged by headrunner */
-        const timestamp = new Date('2022-09-21 11:01:00');
-        const upperLimit = 3600;
-        saveMapForRun_(timestamp, upperLimit); // Add 1 hour
+        /** Activity tagged by headrunner */ 
+        const timestamp = new Date('2025-03-22 10:00:00');
+        const upperLimit = 3600 * 1000;   // 1 hour in milliseconds
+        const upperTimestamp = new Date(timestamp.getTime() + upperLimit);
+        saveMapForRun_(timestamp, upperTimestamp);
       }
     }
   }
   
   // Choose which function to run and log response
-  const response = runExample('A');
-  console.log(response);
+  const response = runExample('D');
+  console.log('Result: ' + response);
+}
+
+function startSaving() {
+  const lastRow = getValidLastRow(LOG_SHEET);
+  const timestamp = new Date('2025-03-22 10:00:00');
+  const upperLimit = 3600 * 1000;   // 1 hour in milliseconds
+  const upperTimestamp = new Date(timestamp.getTime() + upperLimit);
+
+  saveStravaStats_(lastRow, timestamp, upperTimestamp);
+}
+
+
+function saveStravaStats_(row, submissionTimestamp, maxDate = new Date()) {
+  // Get string representation of timestamp
+  const submissionTimestampStr = submissionTimestamp.toString();
+
+  // Get Unix Epoch value of timestamps to define search range
+  const toTimestamp = getUnixEpochTimestamp_(maxDate);
+  const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp);
+
+  const activity = getStravaActivity(fromTimestamp, toTimestamp);
+
+  // Extract polyline and save path as map
+  //const polyline = activity['map']['summary_polyline'];
+  //const mapDownloadUrl = saveMapAsFile_(polyline, fromTimestamp);
+  const mapDownloadUrl = 'https://drive.google.com/uc?id=1GET38bgwPRuWXWI7GLgjtHztghE2K7mT&export=download';
+
+  // Add map url to activity
+  activity['mapUrl'] = mapDownloadUrl;  // Verify property name in LOG_TARGETS
+
+  // Save activity to row in sheet
+  setStravaStats_(row, activity);
+  Logger.log('Successfully imported Strava activity to Log Sheet!');
+}
+
+
+function setStravaStats_(row, activity) {
+  const sheet = LOG_SHEET;
+  const statsMap = LOG_TARGETS;
+  const statsArr = Object.entries(statsMap);
+
+  // Get range from Strava Account to Map Polyline
+  const startCol = LOG_INDEX.STRAVA_ACCOUNT;
+  const size = statsArr.length;
+  const rangeToSet = sheet.getRange(row, startCol, 1, size);
+
+  // Extract from activity and set in sheet
+  const offset = size - 1;
+  const extracted = extractRunStats_(activity, statsArr, offset);
+  rangeToSet.setValues([extracted]);
+}
+
+
+function getStravaActivity(fromTimestamp, toTimestamp) {
+  // Package query for Strava API
+  const queryObj = { 'after': fromTimestamp, 'before': toTimestamp };
+
+  const endpoint = ACTIVITIES_ENDPOINT;
+  const response = callStravaAPI_(endpoint, queryObj);
+
+  if (response.length === 0) {
+    // Create an instance of ExecutionError with a custom message
+    const errorMessage = `No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`;
+    throw new Error(errorMessage);
+  }
+
+  const activity = response[0];  // Assume first activity is the target
+  return activity;
 }
 
 
@@ -110,7 +192,7 @@ function callStravaAPI_(endpoint, query_object = {}) {
   // Verify is access authorized already
   if (!service.hasAccess()) {
     // Display authorization url and exit
-    return prettyLog(
+    return prettyLog_(
       'App has no access yet.',
       'Open the following URL to gain authorization from Strava and re-run the script.',
       service.getAuthorizationUrl()
@@ -202,30 +284,17 @@ function getUnixEpochTimestamp_(timestamp) {
  * 
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Mar 22, 2025
- * @update  Mar 22, 2025
+ * @update  Mar 27, 2025
  */
 
-function getRunStats_(activity) {
-  const targetStats = [
-    'athlete',
-    'name',   // Strava Activity name
-    'distance',
-    'moving_time',
-    'elapsed_time',
-    'total_elevation_gain',
-    'average_speed',
-    'max_speed',
-    'map',
-  ];
+function extractRunStats_(activity, statsMap, offset = 0) {
+  const valArr = [];
+  for (const [stat, index] of statsMap) {
+    const relativeIndex = index - offset;
+    valArr[relativeIndex] = activity[stat] || "";
+  }
 
-  const found = {};
-  targetStats.forEach(stat => {
-    if(activity[stat]) { 
-      found[stat] = activity[stat];   // Only collect if defined in `activity`
-    }
-  });
-
-  return found;
+  return valArr;
 }
 
 
@@ -239,7 +308,7 @@ function saveMapForLatestRun() {
  * Takes a Strava API response for a given activity and saves an
  * image of the map to the desired location.
  * 
- * @param {object} stravaActivity  A Strava object `SummaryActivity` or `ClubActivity`.
+ * @param {string} polyline  A encoded polyline representing a path.
  * @param {string} filename  Name to save file as.
  * 
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
@@ -249,18 +318,63 @@ function saveMapForLatestRun() {
  * @update  Mar 25, 2025
  */
 
-function saveMapToFile_(stravaActivity, filename) {
-  // Extract polyline and add as path to map
+function getMapBlob(polyline, filename) {
+  if (!polyline) {
+    return Logger.log('Map cannot be created: no polyline found for this activity');
+  }
+  
   const runMap = Maps.newStaticMap();
-  const polyline = stravaActivity['map']['summary_polyline'];
   runMap.addPath(polyline);
 
   // Save runMap as as image to specified location
-  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', filename)
-  DriveApp.createFile(mapBlob);
+  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', filename);
+  
+  // Display success message
+  Logger.log(`Successfully created map blob as ${filename}.png`);
+  return mapBlob;
+}
+
+
+/**
+ * Takes a Strava API response for a given activity and saves an
+ * image of the map to the desired location.
+ * 
+ * @param {string} polyline  A encoded polyline representing a path.
+ * @param {integer} timestamp  Name to save file as.
+ * 
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Dec 1, 2024
+ * @update  Mar 27, 2025
+ */
+
+function saveMapAsFile_(polyline, timestamp) {
+  if (!polyline) {
+    return Logger.log('Map cannot be created: no polyline found for this activity');
+  }
+
+  const runMap = Maps.newStaticMap();
+  runMap.addPath(polyline);
+
+  // Get save location using timestamp
+  const saveLocation = getSaveLocation(timestamp);
+
+  // Save runMap as as image to specified location
+  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', saveLocation)
+  const file = DriveApp.createFile(mapBlob);
 
   // Display success message
-  Logger.log(`Successfully saved map as ${filename}.png`);
+  Logger.log(`Successfully saved map as ${saveLocation}.png`);
+
+  // Set permission to allow downloading
+  file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+  return file.getDownloadUrl();
+
+  /** Helper function to get location of file to save */
+  function getSaveLocation(submissionTime) {
+    return MAPS_FOLDER + '/' + submissionTime.toString() + '.png'
+  }
 }
 
 
@@ -300,7 +414,11 @@ function saveMapForRun_(submissionTimestamp, maxDate = new Date()) {
 
   const activity = response[0];  // Assume first activity is the target
   const saveLocation = getSaveLocation(fromEpochTime);
-  saveMapToFile_(activity, saveLocation);
+
+  // Extract polyline and save path as map
+  const polyline = activity['map']['summary_polyline'];
+  saveMapAsFile_(polyline, saveLocation);
+  //const mapBlob = getMapBlob(polyline, saveLocation);
 
   /** Helper function to get location of file to save */
   function getSaveLocation(submissionTime) {

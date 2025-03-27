@@ -66,7 +66,7 @@ function safeReset() {
  * because the library creates the authorization URL with them
  * automatically: `redirect_url`, `response_type`, and `state`.
  * 
- * ##### APPENDED COMMENTS BY USER
+ * #### APPENDED COMMENTS BY USER
  * 
  * Client ID and Secret stored in script properties. *(Mar 23, 2025)*
  * 
@@ -110,7 +110,7 @@ function getStravaService_() {
 /**
  * Handles the OAuth callback.
  * 
- * ##### APPENDED COMMENTS BY USER
+ * #### APPENDED COMMENTS BY USER
  * 
  * Must have global scope in project *(Mar 23, 2025)*
  * 

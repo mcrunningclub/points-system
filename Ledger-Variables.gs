@@ -79,6 +79,7 @@ const LOG_INDEX = {
   MAX_SPEED : 13,
   ELEVATION : 14,
   MAP_POLYLINE : 15,
+  MAP_URL : 16,
 }
 
 function getUserTimeZone_() {

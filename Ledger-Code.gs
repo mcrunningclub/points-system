@@ -53,7 +53,7 @@ function getLatestSubmissionTimestamp() {
 function getValidLastRow(sheet) {
   let lastRow = sheet.getLastRow();
   
-  while (sheet.getRange(lastRow, 0).getValue() == "") {
+  while (sheet.getRange(lastRow, 1).getValue() == "") {
     lastRow = lastRow - 1;
   }
   return lastRow;

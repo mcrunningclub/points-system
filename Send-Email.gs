@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
-const POINTS_EMAIL_NAME = 'Points Email Template';
+const POINTS_EMAIL_NAME = 'Stats Email Template';
 
 const EMAIL_LEDGER_TARGETS = {
   feeStatus : LEDGER_INDEX.FEE_STATUS,
@@ -27,7 +27,7 @@ const EMAIL_LEDGER_TARGETS = {
   runStreak : LEDGER_INDEX.RUN_STREAK,
   totalRuns : LEDGER_INDEX.TOTAL_RUNS,
   totalDistance : LEDGER_INDEX.TOTAL_DISTANCE,
-  // TOTAL_ELEVATION,
+  totalElevation: LEDGER_INDEX.TOTAL_ELEVATION,
 };
 
 
@@ -162,6 +162,7 @@ function pointsEmail() {
   }
 }
 
+
 function sendStatsEmail_(email, memberStats, stravaActivity = {}) {
   // Prepare the HTML body from the template
   const template = HtmlService.createTemplateFromFile(POINTS_EMAIL_NAME);
@@ -217,8 +218,6 @@ function mailMemberPoints_(trimmedName, email, points) {
   // Log confirmation for the sent email with values for each variable
   Logger.log(`Email sent to ${trimmedName} at ${email} with ${points} points.`);
 }
-
-
 
 
 function sendTestEmail() {
