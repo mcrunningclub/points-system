@@ -18,6 +18,7 @@ limitations under the License.
 
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
 const POINTS_EMAIL_NAME = 'Stats Email Template';
+const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap?";
 
 const EMAIL_LEDGER_TARGETS = {
   feeStatus : LEDGER_INDEX.FEE_STATUS,
@@ -31,32 +32,54 @@ const EMAIL_LEDGER_TARGETS = {
 };
 
 
+/** 
+ * Testing Runtime Functions
+ */
+
 function fTest() {
   const items = ["apple", "banana", "cherry"];
+
+  // Using .bind() to pre-set the first argument
+  items.forEach(logItemWithPrefix.bind(null, "Fruit"));
 
   function logItemWithPrefix(prefix, item, index) {
     console.log(`${prefix} Index ${index}: ${item}`);
   }
-
-  // Using .bind() to pre-set the first argument
-  items.forEach(logItemWithPrefix.bind(null, "Fruit"));
 }
+
+function sendTestEmail() {
+  const template = HtmlService.createTemplateFromFile('Stats Email Template');
+
+  // Returns string content from populated html template
+  const templateHTML = template.evaluate().getContent();
+
+  // Construct and send the email
+  const subject = `Your Run Recap TEST`;
+
+  MailApp.sendEmail({
+    to: 'andreysebastian10.g@gmail.com',
+    cc: 'andrey.gonzalez@mail.mcgill.ca',
+    subject: subject,
+    htmlBody: templateHTML
+  });
+}
+
 
 // Return latest log values
-function getLatestLog() {
-  return getLogInRow();
+function getLatestLog_() {
+  return getLogInRow_();
 }
 
-function getLogInRow(row = getValidLastRow(LOG_SHEET)) {
+function getLogInRow_(row = getValidLastRow(LOG_SHEET)) {
   const sheet = LOG_SHEET;
   const numCols = sheet.getLastColumn();
   return sheet.getSheetValues(row, 1, 1, numCols)[0];
 }
 
-function getLogAttendees(row) {
+function getLogAttendees_(row) {
   // Get log attendees using stored index
   const attendeesCol = LOG_INDEX.ATTENDEE_NAME_EMAIL - 1;
-  const thisLog = getLogInRow(row);
+  const thisLog = getLogInRow_(row);
 
   // Return log attendees
   return thisLog[attendeesCol];
@@ -67,7 +90,7 @@ function getLogAttendees(row) {
   }
 }
 
-function getLedgerData() {
+function getLedgerData_() {
   const pointSheet = LEDGER_SHEET;
   
   // Define dimensions of sheet data
@@ -76,12 +99,10 @@ function getLedgerData() {
   const numRows = getValidLastRow(pointSheet) - 1;   // Remove header row
   const numCols = LEDGER_COL_COUNT;   // Exclude event-specific points
 
-  const data = pointSheet.getSheetValues(startRow, startCol, numRows, numCols)
-  console.log(data);
-  return data;
+  return pointSheet.getSheetValues(startRow, startCol, numRows, numCols);
 }
 
-function logStatus(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(logSheet)) {
+function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(logSheet)) {
   // Update the status of sending email
   const currentTime = Utilities.formatDate(new Date(), TIMEZONE, '[dd-MMM HH:mm:ss] ---');
   const statusRange = logSheet.getRange(thisRow, LOG_INDEX.EMAIL_STATUS);
@@ -90,6 +111,31 @@ function logStatus(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(l
   const previousValue = statusRange.getValue() ? statusRange.getValue() + '\n' : '';
   const updatedStatus = `${previousValue}${currentTime}\n${messageArr.join('\n')}`
   statusRange.setValue(updatedStatus);
+}
+
+
+/** Actual function that sends email */
+function sendStatsEmail_(email, memberStats, stravaActivity = {}) {
+  const emailTemplate = STATS_EMAIL_OBJ;  // String instead of HTML template
+
+  try {
+    const msgObj = fillInTemplateFromObject_(emailTemplate, data);
+
+    MailApp.sendEmail(
+      //to: email
+      'andreysebastian10.g@gmail.com',
+      emailTemplate.subject,
+      msgObj.text, { 
+        htmlBody: msgObj.html,
+      }
+    );
+
+  } catch(e) {
+    return Logger.log(e);
+  }
+
+  // Log confirmation for the sent email with values for each variable
+  return `Email sent to ${email} with ${memberStats['totalPoints']} points.`;
 }
 
 
@@ -122,7 +168,7 @@ function pointsEmail() {
   const row = getValidLastRow(logSheet);
 
   // Get attendees from log
-  const attendees = getLogAttendees(row);
+  const attendees = getLogAttendees_(row);
 
   if (attendees.length === 0) {
     // Save return status of function execution
@@ -139,7 +185,7 @@ function pointsEmail() {
 
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
-  const ledgerData = getLedgerData();
+  const ledgerData = getLedgerData_();
   const returnStatus = [];
 
   // Loop through emails, package member data, then send email
@@ -163,35 +209,8 @@ function pointsEmail() {
 }
 
 
-function sendStatsEmail_(email, memberStats, stravaActivity = {}) {
-  // Prepare the HTML body from the template
-  const template = HtmlService.createTemplateFromFile(POINTS_EMAIL_NAME);
-
-  // Ensure placeholder names are valid
-  template.FIRST_NAME = memberStats['firstName'];
-  template.FEE_STATUS = memberStats['feeStatus'];
-  template.MEMBER_POINTS = memberStats['totalPoints'];
-  template.RUN_STREAK = memberStats['runStreak'];
-  template.TOTAL_RUNS = memberStats['totalRuns'];
-  template.TOTAL_DISTANCE = memberStats['totalDistance'];
-
-  // Returns string content from constructed html template
-  const pointsEmailHTML = template.evaluate().getContent();
-
-  const subject = `Your Member Stats`;
-  MailApp.sendEmail({
-    //to: email,
-    to: 'andrey.gonzalez@mail.mcgill.ca',
-    subject: subject,
-    htmlBody: pointsEmailHTML
-  });
-
-  // Log confirmation for the sent email with values for each variable
-  return `Email sent to ${email} with ${memberStats['totalPoints']} points.`;
-}
-
-
-function mailMemberPoints_(trimmedName, email, points) {
+/** Function for first iteration of Stats Email Template (V1) */
+function mailMemberPointsV1_(trimmedName, email, points) {
   // Exit if no email found for member
   if (!email) {
     return Logger.log(`No email found for ${trimmedName}.`);
@@ -210,7 +229,6 @@ function mailMemberPoints_(trimmedName, email, points) {
 
   MailApp.sendEmail({
     //to: email,
-    to: 'andrey.gonzalez@mail.mcgill.ca',
     subject: subject,
     htmlBody: pointsEmailHTML
   });
@@ -220,21 +238,95 @@ function mailMemberPoints_(trimmedName, email, points) {
 }
 
 
-function sendTestEmail() {
-  const template = HtmlService.createTemplateFromFile('Stats Email Template');
+/**
+ * Google Maps API for headrun map creation
+ */
 
-  // Returns string content from populated html template
-  const templateHTML = template.evaluate().getContent();
+function buildPostUrl_(polyline, imgSize = "580x420") {
+  // URL Parameters
+  const propertyStore = PropertiesService.getScriptProperties();
+  const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
 
-  // Construct and send the email
-  const subject = `Your Run Recap TEST`;
+  const googleCloudMapId = 'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
 
-  MailApp.sendEmail({
-    //to: email,
-    to: 'andreysebastian10.g@gmail.com',
-    cc: 'andrey.gonzalez@mail.mcgill.ca',
-    subject: subject,
-    htmlBody: templateHTML
+  //Google Static Maps API URL
+  return MAPS_BASE_URL +
+    `size=${imgSize}&` +
+    `map_id=${googleCloudMapId}&` +
+    `path=enc:${polyline}&` + 
+    `key=${apiKey}`;
+}
+
+
+function postToMakeWebhook_(postUrl) {
+  const webhookUrl = "https://hook.us1.make.com/8obb3hb6bzwgi7s4nyi8yfghb3kxsksc";
+  const payload = JSON.stringify({ url: postUrl });
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: payload
+  };
+
+  const response = UrlFetchApp.fetch(webhookUrl, options);
+  Logger.log("Response: " + response.getContentText());
+}
+
+
+/*
+Copyright 2022 Martin Hawksey
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Helpher function to fill email template.
+*/
+
+/**
+ * Fill template string with data object
+ * @see https://stackoverflow.com/a/378000/1027723
+ * @param {string} template string containing {{}} markers which are replaced with data
+ * @param {object} data object used to replace {{}} markers
+ * @return {object} message replaced with data
+*/
+function fillInTemplateFromObject_(template, data) {
+  // We have two templates one for plain text and the html body
+  // Stringifing the object means we can do a global replace
+  let template_string = JSON.stringify(template);
+
+  // Token replacement
+  template_string = template_string.replace(/{{[^{{}}]+}}/g, key => {
+    return escapeData_(data[key.replace(/[{{}}]+/g, "")] || "");
   });
 
+
+  return JSON.parse(template_string);
 }
+
+/**
+ * Escape cell data to make JSON safe
+ * @see https://stackoverflow.com/a/9204218/1027723
+ * @param {string} str to escape JSON special characters from
+ * @return {string} escaped string
+*/
+function escapeData_(str) {
+  return str
+    .replace(/[\\]/g, '\\\\')
+    .replace(/[\"]/g, '\\\"')
+    .replace(/[\/]/g, '\\/')
+    .replace(/[\b]/g, '\\b')
+    .replace(/[\f]/g, '\\f')
+    .replace(/[\n]/g, '\\n')
+    .replace(/[\r]/g, '\\r')
+    .replace(/[\t]/g, '\\t');
+};
+

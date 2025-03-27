@@ -76,22 +76,10 @@ function formatSpecificColumns() {
 
 
 /**
- * Returns formatted head run information for note to set.
- * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * @date  Oct 29, 2023
- * @update  Oct 29, 2023
- */
-
-function formatDateNote(timestamp, headRun) {
-  var ret = "Head Run - " + headRun;
-  ret += " on " + Utilities.formatDate(new Date(timestamp), TIMEZONE, "MMM dd, YYYY");
-  return ret;
-}
-
-
-/**
  * Formats string to Title Case.
+ * 
+ * @param {string} inputString  String to format.
+ * @return {string}  String in title case.
  * 
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Oct 30, 2023
@@ -103,4 +91,3 @@ function toTitleCase(inputString) {
     return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
   });
 }
-
