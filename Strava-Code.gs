@@ -162,6 +162,33 @@ function setStravaStats_(row, activity) {
 }
 
 
+/**
+ * Change the units from Strava activity to user-friendly units.
+ * 
+ * @param {Object} activity  Strava activity.
+ * @return {Object}  Formatted Strava activity.
+ *
+ * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Mar 30, 2025
+ * @update  Mar 30, 2025
+ */
+
+function changeUnits_(activity) {
+  const METRE_PER_SEC_TO_KM_TO_H = 3.6;
+  const METRE_PER_SEC_TO_KM_PER_MIN = 100/6;
+  const M_TO_KM = 1/1000;
+  const SEC_TO_MIN = 1/60;
+
+  activity['max_speed'] *= METRE_PER_SEC_TO_KM_TO_H;
+  activity['average_speed'] = METRE_PER_SEC_TO_KM_PER_MIN / activity['average_speed'];
+  activity['distance'] *= M_TO_KM;
+  activity['elapsed_time'] *= SEC_TO_MIN;
+
+  return activity;
+}
+
+
 function getStravaActivity(fromTimestamp, toTimestamp) {
   // Package query for Strava API
   const queryObj = { 'after': fromTimestamp, 'before': toTimestamp };
