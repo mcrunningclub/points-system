@@ -65,43 +65,6 @@ function sendTestEmail() {
 }
 
 
-// Return latest log values
-function getLatestLog_() {
-  return getLogInRow_();
-}
-
-function getLogInRow_(row = getValidLastRow(LOG_SHEET)) {
-  const sheet = LOG_SHEET;
-  const numCols = sheet.getLastColumn();
-  return sheet.getSheetValues(row, 1, 1, numCols)[0];
-}
-
-function getLogAttendees_(row) {
-  // Get log attendees using stored index
-  const attendeesCol = LOG_INDEX.ATTENDEE_NAME_EMAIL - 1;
-  const thisLog = getLogInRow_(row);
-
-  // Return log attendees
-  return thisLog[attendeesCol];
-
-  /** Ensure input is not falsy and does not contain "None" */
-  function attendeeFilter(input) {
-    return input && !/\bNone\b/i.test(input);
-  }
-}
-
-function getLedgerData_() {
-  const pointSheet = LEDGER_SHEET;
-  
-  // Define dimensions of sheet data
-  const startCol = 1;
-  const startRow = 2;
-  const numRows = getValidLastRow(pointSheet) - 1;   // Remove header row
-  const numCols = LEDGER_COL_COUNT;   // Exclude event-specific points
-
-  return pointSheet.getSheetValues(startRow, startCol, numRows, numCols);
-}
-
 function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(logSheet)) {
   // Update the status of sending email
   const currentTime = Utilities.formatDate(new Date(), TIMEZONE, '[dd-MMM HH:mm:ss] ---');
@@ -115,7 +78,9 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(
 
 
 /** Actual function that sends email */
-function sendStatsEmail_(email, memberStats, stravaActivity = {}) {
+// ⭐️⭐️⭐️⭐️
+
+function sendStatsEmail_(email, memberStats) {
   const emailTemplate = STATS_EMAIL_OBJ;  // String instead of HTML template
 
   try {
@@ -155,17 +120,14 @@ function sendStatsEmail_(email, memberStats, stravaActivity = {}) {
  * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 5, 2024
- * @update  Mar 23, 2025
+ * @update  Mar 27, 2025
  */
 
-function pointsEmail() {
+function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
     throw new Error ('Please switch to the McRUN Google Account before sending emails');
   }
-
-  const logSheet = LOG_SHEET;
-  const row = getValidLastRow(logSheet);
 
   // Get attendees from log
   const attendees = getLogAttendees_(row);
@@ -175,13 +137,14 @@ function pointsEmail() {
     return logMessages([`No recipients found for row: ${row}`], logSheet, row);
   }
 
-  // Store recipient information as `{email : name}`
-  // @todo Collect emails only in arr?
-  const recipientMap = {};
-  attendees.split('\n').forEach(entry => {
-    const [name, email] = entry.split(':');
-    recipientMap[email] = name;
-  });
+  // Extract email and store in arr
+  const recipientArr = 
+    attendees.split('\n').reduce((acc, entry) => {
+      const [, email] = entry.split(':');
+      acc.push(email);
+      return acc;
+    }, []
+  );
 
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
@@ -189,9 +152,9 @@ function pointsEmail() {
   const returnStatus = [];
 
   // Loop through emails, package member data, then send email
-  for (const email of Object.keys(recipientMap)) {
+  for (const email of recipientArr) {
     const entry = getLedgerEntry(email, ledgerData);
-    const memberStats = extractEmailValues_(entry);  // Get values for email
+    const memberStats = extractEmailValues_(entry);  // Get values for post-run email
     returnStatus.push(sendStatsEmail_(email, memberStats));  // Save return status
   }
 
@@ -209,7 +172,13 @@ function pointsEmail() {
 }
 
 
-/** Function for first iteration of Stats Email Template (V1) */
+/** 
+ * Function to send first iteration of Stats Email Template.
+ * 
+ * @author [Charles Villegas](<charles.villegas@mail.mcgill.ca>) & ChatGPT
+ * @deprecated
+ */
+
 function mailMemberPointsV1_(trimmedName, email, points) {
   // Exit if no email found for member
   if (!email) {
@@ -258,9 +227,9 @@ function buildPostUrl_(polyline, imgSize = "580x420") {
 }
 
 
-function postToMakeWebhook_(postUrl) {
+function postToMakeWebhook_(postUrl, timestamp) {
   const webhookUrl = "https://hook.us1.make.com/8obb3hb6bzwgi7s4nyi8yfghb3kxsksc";
-  const payload = JSON.stringify({ url: postUrl });
+  const payload = JSON.stringify({ url: postUrl, name : timestamp });
 
   const options = {
     method: "post",

@@ -22,6 +22,15 @@ const LEDGER_SHEET = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
 const LOG_SHEET_NAME = 'Event Log';
 const LOG_SHEET = LEDGER_SS.getSheetByName(LOG_SHEET_NAME);
 
+let LEDGER_DATA = null;
+
+function GET_LEDGER_() {
+  if (!LEDGER_DATA) {
+    LEDGER_DATA = getLedgerData_();
+  }
+  return LEDGER_DATA;
+}
+
 const TIMEZONE = getUserTimeZone_();
 const MCRUN_EMAIL = 'mcrunningclub@ssmu.ca';
 
@@ -71,7 +80,7 @@ const LOG_INDEX = {
   DISTANCE_ESTIMATED : 5,
   EVENT_POINTS : 6,
   EMAIL_STATUS : 7,
-  STRAVA_ACCOUNT : 8,
+  STRAVA_ACTIVITY_ID : 8,
   STRAVA_ACTIVITY_NAME : 9,
   DISTANCE_STRAVA : 10,
   ELAPSED_TIME : 11,

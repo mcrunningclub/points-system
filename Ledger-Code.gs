@@ -27,6 +27,8 @@ limitations under the License.
  * UPDATED: MARCH 27, 2025
  */
 
+
+
 // CURRENTLY IN REVIEW!
 function newSubmission() {
   formatSpecificColumns();
@@ -47,11 +49,12 @@ function newSubmission() {
  */
 
 function getLatestSubmissionTimestamp() {
-  const sheet = LOG_SHEET;
-  const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
-  const lastRow = getValidLastRow(sheet);
+  return getSubmissionTimestamp();
+}
 
-  const timestamp = sheet.getRange(lastRow, timestampCol).getValue();
+function getSubmissionTimestamp(row = getValidLastRow(LOG_SHEET)) {
+  const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
+  const timestamp = sheet.getRange(row, timestampCol).getValue();
   return new Date(timestamp);
 }
 
@@ -79,8 +82,64 @@ function getValidLastRow(sheet) {
 }
 
 
+// Return latest log values
+function getLatestLog_() {
+  return getLogInRow_();
+}
+
+function getLogInRow_(row = getValidLastRow(LOG_SHEET)) {
+  const sheet = LOG_SHEET;
+  const numCols = sheet.getLastColumn();
+  return sheet.getSheetValues(row, 1, 1, numCols)[0];
+}
+
+function getLogAttendees_(row) {
+  // Get log attendees using stored index
+  const attendeesCol = LOG_INDEX.ATTENDEE_NAME_EMAIL - 1;
+  const thisLog = getLogInRow_(row);
+
+  // Return log attendees
+  return thisLog[attendeesCol];
+
+  /** Ensure input is not falsy and does not contain "None" */
+  function attendeeFilter(input) {
+    return input && !/\bNone\b/i.test(input);
+  }
+}
+
+
+// Exclude event-specific points
+
+/**
+ * Get ledger data from `LEDGER_SHEET` to send emails.
+ * 
+ * @param {number} [start = LEDGER_COL_COUNT]  The number of rows to get starting from email col. 
+ *                                             Defaults to last col before events (`LEDGER_COL_COUNT`).
+ * 
+ * @return {Object[][]}  Returns the 1-indexed row number where the email is found, 
+ *                        or `null` if the email is not found.
+ * 
+ * @example `const submissionRowNumber = findMemberByBinarySearch('example@mail.com', getLedgerData());`
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
+ * @date  Mar 23, 2025
+ * @update  Mar 23, 2025
+ */
+
+function getLedgerData_(numCols = LEDGER_COL_COUNT) {
+  const pointSheet = LEDGER_SHEET;
+  
+  // Define dimensions of sheet data
+  const startCol = 1;
+  const startRow = 2;
+  const numRows = getValidLastRow(pointSheet) - 1;   // Remove header row
+
+  return pointSheet.getSheetValues(startRow, startCol, numRows, numCols);
+}
+
+
 function getLedgerEntry(email, ledgerData) {
-  const row = findMemberInLedger(email, ledgerData);
+  const row = findMemberInLedger_(email, ledgerData);
   return ledgerData[row];
 }
 
@@ -105,7 +164,7 @@ function getLedgerEntry(email, ledgerData) {
  * @update  Mar 23, 2025
  */
 
-function findMemberInLedger(emailToFind, ledger) {
+function findMemberInLedger_(emailToFind, ledger) {
   const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;   // Make 0-indexed
   return findThisEmailBinarySearch();
 
