@@ -32,7 +32,6 @@ limitations under the License.
 function newSubmission() {
   formatSpecificColumns();
   sortNameByAscending();
-  updateHeadRunPoints();
 }
 
 
@@ -48,10 +47,11 @@ function newSubmission() {
  */
 
 function getLatestSubmissionTimestamp() {
-  return getSubmissionTimestamp();
+  return getSubmissionTimestamp(getValidLastRow(LOG_SHEET));
 }
 
-function getSubmissionTimestamp(row = getValidLastRow(LOG_SHEET)) {
+function getSubmissionTimestamp(row) {
+  const sheet = LOG_SHEET;
   const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
   const timestamp = sheet.getRange(row, timestampCol).getValue();
   return new Date(timestamp);
@@ -136,7 +136,7 @@ function getLedgerData_(numCols = LEDGER_COL_COUNT) {
 
 function getLedgerEntry(email, ledgerData) {
   const row = findMemberInLedger_(email, ledgerData);
-  return ledgerData[row];
+  return ledgerData[row] ?? [];
 }
 
 /**

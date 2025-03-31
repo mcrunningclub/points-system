@@ -106,19 +106,29 @@ function toTitleCase(inputString) {
  * @update  Mar 31, 2025
  */
 
-function convertUnits_(activity, isMetric) {
-  const result = {};
-  const units = getUnitsMap();
+function convertAllUnits_(activity, isMetric) {
+  const units = getUnitsMap_(isMetric);
 
-  for (const key of Object.keys(activity)) {
+  for (const [key, constant] of Object.entries(units)) {
     const op = (key === 'average_speed') ? (a, b) => b / a : (a, b) => a * b;
-    result[key] = op(activity[key], units[key]);
+    activity[key] = op(activity[key], constant);
+  }
+}
+
+
+function convertUnit_(type, value, isMetric) {
+  const units = getUnitsMap_(isMetric);
+
+  if (type === 'average_speed') {
+    return units[type] / value;
   }
 
-  return result;
+  return value / units[type];
+}
 
-  /** Returns the stat to unit conversion mapping in metric or imperial*/
-  function getUnitsMap() {
+
+/** Returns the stat to unit conversion mapping in metric or imperial*/
+  function getUnitsMap_(isMetric) {
     const SEC_TO_MIN = 1 / 60;
 
     /** Metric Conversions  */
@@ -138,4 +148,3 @@ function convertUnits_(activity, isMetric) {
       'max_speed': isMetric ? M_PER_SEC_TO_KM_TO_H : M_PER_SEC_TO_MILES_TO_H,
     }
   }
-}

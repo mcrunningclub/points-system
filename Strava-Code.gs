@@ -44,7 +44,7 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
 
 
 /**
- * Strava API playground for user.
+ * Strava API playground for developer.
  */
 
 function stravaPlayground() {
@@ -87,8 +87,8 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
 
   // Save stats to log sheet and store map to Drive.
   // Filename is timestamp. Download url added to `activity` obj
-  const activity = saveStravaStats_(timestamp);
-  setStravaStats_(row, activity);
+  const activity = getStravaStats_(timestamp);
+  if (activity) setStravaStats_(row, activity);
 
   return activity;
 }
@@ -107,7 +107,7 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
  * @update  Mar 31, 2025
  */
 
-function saveStravaStats_(submissionTimestamp, maxDate = new Date()) {
+function getStravaStats_(submissionTimestamp, maxDate = new Date()) {
   // Get Unix Epoch value of timestamps to define search range
   const toTimestamp = getUnixEpochTimestamp_(maxDate);
   const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp);
@@ -115,14 +115,28 @@ function saveStravaStats_(submissionTimestamp, maxDate = new Date()) {
   // Get activity with time constraints
   const activity = getStravaActivity_(fromTimestamp, toTimestamp);
 
-  // Extract polyline and save headrun route as map
-  const polyline = activity['map']['polyline'];
-  const name = submissionTimestamp.getString();
-  saveMapForRun_(polyline, name)
+  if (!activity) {
+    return null && Logger.log(`No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`);
+  }
 
-  // Get download url from file and add to `activity`
-  const mapDownloadUrl = getMapFile_(name).getDownloadUrl();
-  activity['mapUrl'] = mapDownloadUrl;
+  // Extract polyline and save headrun route as map
+
+  activity['mapUrl'] = 'https://drive.google.com/uc?id=1KV9ZXr4gkc0UwQFTJcDuTKa4GgVQzDLm&export=download'
+  return activity;
+
+  
+  const polyline = activity['map']['polyline'] ?? activity['map']['summary_polyline'];
+  if (polyline) {
+    const response = saveMapForRun_(polyline, fromTimestamp).getHeaders();
+    
+    // Get file by id or name, then set permission to allow downloading
+    const file = response['file_id'] ? getFileById_(response['file_id']) : getFileByName_(name);
+    file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+
+    // Get download url from file and add to `activity`
+    const mapDownloadUrl = file.getDownloadUrl();
+    activity['mapUrl'] = mapDownloadUrl;
+  }
 
   return activity;
 }
@@ -131,23 +145,15 @@ function saveStravaStats_(submissionTimestamp, maxDate = new Date()) {
 /** Get Strava Activity in the input range */
 function getStravaActivity_(fromTimestamp, toTimestamp) {
   // Package query for Strava API
-  const queryObj = { 'after': fromTimestamp, 'before': toTimestamp };
+  const queryObj = { 
+    'after' : fromTimestamp, 
+    'before' : toTimestamp,
+    'include_all_efforts' : true 
+  };
 
   const endpoint = ACTIVITIES_ENDPOINT;
   const response = callStravaAPI_(endpoint, queryObj);
-
-  if (response.length === 0) {
-    // Create an instance of ExecutionError with a custom message
-    const errorMessage = `No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`;
-    throw new Error(errorMessage);
-  }
-
   return response[0];  // Assume first activity is the target
-}
-
-
-function getMapFile_(name) {
-  return DriveApp.searchFiles(`title contains '${name}'`).next();
 }
 
 
@@ -156,7 +162,7 @@ function setStravaStats_(row, activity) {
   const statsMap = Object.entries(LOG_TARGETS);
 
   // Get range from Strava Account to Map Polyline
-  const startCol = LOG_INDEX.STRAVA_ACCOUNT;
+  const startCol = LOG_INDEX.STRAVA_ACTIVITY_ID;
   const size = statsMap.length;
   const rangeToSet = sheet.getRange(row, startCol, 1, size);
 
@@ -224,7 +230,18 @@ function extractRunStats_(activity, statsMap, offset = 0) {
 
 function saveMapForRun_(polyline, name) {
   const postUrl = buildPostUrl_(polyline, "580x420");
-  postToMakeWebhook_(postUrl, name);
+  return postToMakeWebhook_(postUrl, name);
+}
+
+function tMap() {
+  const p =  "_p~iF~ps|U_ulLnnqC_mqNvxq`@";
+
+  const name = 'run_map_sat_mar_31_2025_10:00:00';
+  const response = saveMapForRun_(p, name);
+
+  console.log(response.getHeaders());
+  console.log(response.getContent());
+  console.log(response.getContentText());
 }
 
 
@@ -258,6 +275,7 @@ function postToMakeWebhook_(postUrl, mapName) {
 
   const response = UrlFetchApp.fetch(webhookUrl, options);
   Logger.log("Response: " + response.getContentText());
+  return response;
 }
 
 
