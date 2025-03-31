@@ -87,7 +87,7 @@ function stravaPlayground() {
   }
   
   // Choose which function to run and log response
-  const response = runExample('D');
+  const response = runExample('E');
   console.log('Result: ' + response);
 }
 
@@ -174,18 +174,45 @@ function setStravaStats_(row, activity) {
  * @update  Mar 30, 2025
  */
 
-function changeUnits_(activity) {
-  const METRE_PER_SEC_TO_KM_TO_H = 3.6;
-  const METRE_PER_SEC_TO_KM_PER_MIN = 100/6;
-  const M_TO_KM = 1/1000;
-  const SEC_TO_MIN = 1/60;
+function convertUnits_(activity, isMetric, result = {}) {
+  const units = getDict();
 
-  activity['max_speed'] *= METRE_PER_SEC_TO_KM_TO_H;
-  activity['average_speed'] = METRE_PER_SEC_TO_KM_PER_MIN / activity['average_speed'];
-  activity['distance'] *= M_TO_KM;
-  activity['elapsed_time'] *= SEC_TO_MIN;
+  for (const key of Object.keys(activity)) {
+    const op = (key === 'average_speed') ? (a, b) => b / a : (a, b) => a * b;
+    result[key] = op(activity[key], units[key]);
+  }
 
-  return activity;
+  return result;
+
+  function getDict() {
+    const SEC_TO_MIN = 1/60;
+
+    /** Metric Conversions  */
+    const METRE_PER_SEC_TO_KM_TO_H = 3.6;
+    const METRE_PER_SEC_TO_KM_PER_MIN = 100/6;
+    const M_TO_KM = 1/1000;
+
+    /** US Imperial Conversions  */
+    const METRE_PER_SEC_TO_MILES_TO_H = 2.237;
+    const METRE_PER_SEC_TO_MILES_PER_MIN = 26.822;
+    const M_TO_MILES = 1/1609;
+
+    return {
+      'distance' : isMetric ? M_TO_KM : M_TO_MILES,
+      'elapsed_time' : SEC_TO_MIN,
+      'average_speed' : isMetric ? METRE_PER_SEC_TO_KM_PER_MIN : METRE_PER_SEC_TO_MILES_PER_MIN,
+      'max_speed' : isMetric ? METRE_PER_SEC_TO_KM_TO_H : METRE_PER_SEC_TO_MILES_TO_H,
+    }
+  }
+
+  /** Transform to US imperial units */
+  function toImperialUnits_() {
+    const compute = (act, f, fn) => (result[act] = fn(activity[act], f));
+    compute('distance', M_TO_MILES);
+    compute('elapsed_time', SEC_TO_MIN);
+    compute('average_speed', METRE_PER_SEC_TO_MILES_PER_MIN, (a, b) => b / a);
+    compute('max_speed', METRE_PER_SEC_TO_MILES_TO_H);
+  }
 }
 
 
