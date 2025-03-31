@@ -172,41 +172,80 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
 }
 
 /**
- * Automatically run to send reminder email if members 'last run' date
- * is over 2 weeks ago
+ * Automatically triggered to send reminder email to members whose
+ * "last run" date is over 2 weeks ago
  * 
  * @trigger every Monday
  * 
- * @author [Mona Liu]<mona.liu@mail.mcgill.ca>
+ * @author Mona Liu <mona.liu@mail.mcgill.ca>
  * 
  * @date 2025/03/30
  */
-function sendReminderEmail() {
+function checkAndSendReminderEmail() {
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
     throw new Error('Please switch to the McRUN Google Account before sending emails');
   }
 
-  // get current date
+  // points spreadsheet (currently the test page)
+  const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
+  // columns (0 indexed)
+  const EMAIL_COL = 0;
+  const FNAME_COL = 2;
+  const LAST_RUN_COL = 8;
 
-  // check all member entries who have a "last run" date
-  // make list of emails and first names?
+  // make date object for 2 weeks ago
+  let dateThreshold = new Date();
+  dateThreshold.setDate(dateThreshold.getDate() - 14);
 
-  // loop through members and get info
-  const email = "mona.liu@mail.mcgill.ca";
-  const ccemail = "itsaysusernamenotallowed@gmail.com";
-  const name = "Mona"
+  // get all data entries as 2d array (row, col)
+  let allMembers = POINTS_SHEET.getDataRange().getValues();
 
-  // set up email
+  // loop through member entries (questionable efficiency)
+  // except first row which is the header
+  for (let i = 1; i < allMembers.length; i++) {
+    // check for last run date
+    let member = allMembers[i];
+    let lastRunAsStr = member[LAST_RUN_COL];
+
+    // skip rows with no data
+    if (lastRunAsStr != '') { 
+      // convert last run date into date object
+      let lastRunAsDate = new Date(lastRunAsStr);
+
+      // send reminder email if needed
+      if (lastRunAsDate < dateThreshold) {
+        sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
+      }
+    }
+  }
+
+
+}
+
+/**
+ * Creates reminder email from member name and template,
+ * sends it to given address
+ * 
+ * @param {String} name Member's first name
+ * @param {String} email Member's email address
+ * @returns None
+ * 
+ * @author Mona Liu <mona.liu@mail.mcgill.ca>
+ * 
+ * @date 2025/03/30
+ */
+function sendReminderEmail_(name, email) {
+  // set up email using template
   const template = HtmlService.createTemplateFromFile('reminderemail');
   template.FIRST_NAME = name;
-  const filledTemplate = template.evaluate();
+  let filledTemplate = template.evaluate();
 
   // send email
   try {
     MailApp.sendEmail(
       message = {
-        to: email + "," + ccemail,
+        to: email,
         name: "McRUN",
         subject: "We've missed you!",
         htmlBody: filledTemplate.getContent()
@@ -217,11 +256,9 @@ function sendReminderEmail() {
     Logger.log(e);
   }
 
-  // Log confirmation for the sent email with values for each variable
+  // Log confirmation for the sent email
   Logger.log(`Reminder email sent to ${email}.`);
-
 }
-
 
 
 /** 

@@ -166,7 +166,8 @@ function setStravaStats_(row, activity) {
  * Change the units from Strava activity to user-friendly units.
  * 
  * @param {Object} activity  Strava activity.
- * @return {Object}  Formatted Strava activity.
+ * @param {Boolean} isMetric  True if metric system is used, else imperial system.
+ * @return {Object}  Converted Strava activity.
  *
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
@@ -174,7 +175,8 @@ function setStravaStats_(row, activity) {
  * @update  Mar 30, 2025
  */
 
-function convertUnits_(activity, isMetric, result = {}) {
+function convertUnits_(activity, isMetric) {
+  const result = {};
   const units = getDict();
 
   for (const key of Object.keys(activity)) {
@@ -184,6 +186,7 @@ function convertUnits_(activity, isMetric, result = {}) {
 
   return result;
 
+  /** Returns the stat to unit mapping according to `isMetric` */
   function getDict() {
     const SEC_TO_MIN = 1/60;
 
@@ -203,15 +206,6 @@ function convertUnits_(activity, isMetric, result = {}) {
       'average_speed' : isMetric ? METRE_PER_SEC_TO_KM_PER_MIN : METRE_PER_SEC_TO_MILES_PER_MIN,
       'max_speed' : isMetric ? METRE_PER_SEC_TO_KM_TO_H : METRE_PER_SEC_TO_MILES_TO_H,
     }
-  }
-
-  /** Transform to US imperial units */
-  function toImperialUnits_() {
-    const compute = (act, f, fn) => (result[act] = fn(activity[act], f));
-    compute('distance', M_TO_MILES);
-    compute('elapsed_time', SEC_TO_MIN);
-    compute('average_speed', METRE_PER_SEC_TO_MILES_PER_MIN, (a, b) => b / a);
-    compute('max_speed', METRE_PER_SEC_TO_MILES_TO_H);
   }
 }
 
