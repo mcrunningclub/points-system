@@ -171,6 +171,58 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
   }
 }
 
+/**
+ * Automatically run to send reminder email if members 'last run' date
+ * is over 2 weeks ago
+ * 
+ * @trigger every Monday
+ * 
+ * @author [Mona Liu]<mona.liu@mail.mcgill.ca>
+ * 
+ * @date 2025/03/30
+ */
+function sendReminderEmail() {
+  // Prevent email sent by wrong user
+  if (getCurrentUserEmail_() != MCRUN_EMAIL) {
+    throw new Error('Please switch to the McRUN Google Account before sending emails');
+  }
+
+  // get current date
+
+  // check all member entries who have a "last run" date
+  // make list of emails and first names?
+
+  // loop through members and get info
+  const email = "mona.liu@mail.mcgill.ca";
+  const ccemail = "itsaysusernamenotallowed@gmail.com";
+  const name = "Mona"
+
+  // set up email
+  const template = HtmlService.createTemplateFromFile('reminderemail');
+  template.FIRST_NAME = name;
+  const filledTemplate = template.evaluate();
+
+  // send email
+  try {
+    MailApp.sendEmail(
+      message = {
+        to: email + "," + ccemail,
+        name: "McRUN",
+        subject: "We've missed you!",
+        htmlBody: filledTemplate.getContent()
+      }
+    );
+
+  } catch (e) {
+    Logger.log(e);
+  }
+
+  // Log confirmation for the sent email with values for each variable
+  Logger.log(`Reminder email sent to ${email}.`);
+
+}
+
+
 
 /** 
  * Function to send first iteration of Stats Email Template.
