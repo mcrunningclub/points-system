@@ -223,3 +223,27 @@ function queryObjToString_(query_object) {
   return '?' + query_string;
 }
 
+
+/** Functions previously in `Passkit-API.gs` */
+
+function genTokenSign_(token, secret) {
+  if (token.length != 2) {
+      return;
+  }
+  var hash = Utilities.computeHmacSha256Signature(token.join("."), secret);
+  var base64Hash = Utilities.base64Encode(hash);
+  return urlConvertBase64_(base64Hash);
+}
+
+function base64url_(input) {
+  var base64String = Utilities.base64Encode(input);
+  return urlConvertBase64_(base64String);
+}
+
+function urlConvertBase64_(input) {
+  var output = input.replace(/=+$/, '');
+  output = output.replace(/\+/g, '-');
+  output = output.replace(/\//g, '_');
+  return output;
+}
+
