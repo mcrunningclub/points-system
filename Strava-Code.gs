@@ -88,10 +88,18 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
   // Save stats to log sheet and store map to Drive.
   // Filename is timestamp. Download url added to `activity` obj
   const activity = getStravaStats_(timestamp);
-  if (activity) setStravaStats_(row, activity);
+  
+  // If activity available, add mapUrl and save in log sheet
+  // Check if mapUrl already saved in sheet for target activity before creating new
+  if (activity) {
+    const filename = Utilities.formatDate(timestamp, TIMEZONE, 'EEE-d-MMM-yyyy-hh:mm');
+    activity['mapUrl'] = getMapUrlInRow_(row) ?? createStravaMap_(activity, filename);
+    setStravaStats_(row, activity);
+  }
 
   return activity;
 }
+
 
 /**
  * Get Strava activity of most recent head run submission.
@@ -119,36 +127,26 @@ function getStravaStats_(submissionTimestamp, maxDate = new Date()) {
     return null && Logger.log(`No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`);
   }
 
+  return activity;
+}
+
+
+function createStravaMap_(activity, name) {
   // Extract polyline and save headrun route as map
   const polyline = activity['map']['polyline'] ?? activity['map']['summary_polyline'];
+
   if (polyline) {
-    const response = saveMapForRun_(polyline, fromTimestamp).getHeaders();
+    const response = saveMapForRun_(polyline, name).getHeaders();
     
     // Get file by id or name, then set permission to allow downloading
     const file = response['file_id'] ? getFileById_(response['file_id']) : getFileByName_(name);
     file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
 
-    // Get download url from file and add to `activity`
-    const mapDownloadUrl = file.getDownloadUrl();
-    activity['mapUrl'] = mapDownloadUrl;
+    // Return download url from file
+    return file.getDownloadUrl();
   }
-
-  return activity;
-}
-
-
-/** Get Strava Activity in the input range */
-function getStravaActivity_(fromTimestamp, toTimestamp) {
-  // Package query for Strava API
-  const queryObj = { 
-    'after' : fromTimestamp, 
-    'before' : toTimestamp,
-    'include_all_efforts' : true 
-  };
-
-  const endpoint = ACTIVITIES_ENDPOINT;
-  const response = callStravaAPI_(endpoint, queryObj);
-  return response[0];  // Assume first activity is the target
+  
+  return '';
 }
 
 
@@ -228,18 +226,6 @@ function saveMapForRun_(polyline, name) {
   return postToMakeWebhook_(postUrl, name);
 }
 
-function tMap() {
-  const p =  "_p~iF~ps|U_ulLnnqC_mqNvxq`@";
-
-  const name = 'run_map_sat_mar_31_2025_10:00:00';
-  const response = saveMapForRun_(p, name);
-
-  console.log(response.getHeaders());
-  console.log(response.getContent());
-  console.log(response.getContentText());
-}
-
-
 /** Helper 1: Construct postUrl for Make webhook */
 function buildPostUrl_(polyline, imgSize = "580x420") {
   const propertyStore = PropertiesService.getScriptProperties();
@@ -295,10 +281,12 @@ function saveMapAsBlob_(polyline, timestamp) {
   }
 
   const runMap = Maps.newStaticMap()
-    .setMapType(Maps.StaticMap.Type.ROADMAP)
-    .setPathStyle(6, Maps.StaticMap.Color.RED, "0x00000000")
+    .setSize(800, 600) // Adjust size as needed
+    .setFormat(Maps.StaticMap.Format.PNG)
+    .setMapType(Maps.StaticMap.Type.ROADMAP) // Use ROADMAP for a minimalist style
+    .setPathStyle(3, "0x000000FF", "0x00000000") // Thin black route line, transparent fill
     .addPath(polyline)
-    ;
+  ;
 
   // Get save locati on using timestamp
   const saveLocation = getSaveLocation(timestamp);
@@ -318,24 +306,4 @@ function saveMapAsBlob_(polyline, timestamp) {
   function getSaveLocation(submissionTime) {
     return MAPS_FOLDER + '/' + submissionTime.toString() + '.png'
   }
-}
-
-
-function createMinimalistRouteMap_(polyline) {
-  const propertyStore = PropertiesService.getScriptProperties();
-  const apiKey = propertyStore.getProperty(myScriptKeys.googleMapAPI);
-
-  // Create a new static map
-  const map = Maps.newStaticMap()
-    .setSize(800, 600) // Adjust size as needed
-    .setFormat(Maps.StaticMap.Format.PNG)
-    .setMapType(Maps.StaticMap.Type.ROADMAP) // Use ROADMAP for a minimalist style
-    .setPathStyle(3, "0x000000FF", "0x00000000") // Thin black route line, transparent fill
-    .addPath(polyline);
-
-  // Get the URL of the generated static map
-  const mapUrl = `${map.getMapUrl()}&key=${apiKey}`;
-  Logger.log("Map URL: " + mapUrl);
-
-  return mapUrl;
 }

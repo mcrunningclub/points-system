@@ -59,6 +59,21 @@ function safeReset() {
 }
 
 
+/** Get Strava Activity in the input range */
+function getStravaActivity_(fromTimestamp, toTimestamp) {
+  // Package query for Strava API
+  const queryObj = { 
+    'after' : fromTimestamp, 
+    'before' : toTimestamp,
+    'include_all_efforts' : true 
+  };
+
+  const endpoint = ACTIVITIES_ENDPOINT;
+  const response = callStravaAPI_(endpoint, queryObj);
+  return response[0];  // Assume first activity is the target
+}
+
+
 /**
  * Configures the service using the OAuth2 library.
  * 

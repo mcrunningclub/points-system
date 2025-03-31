@@ -3,6 +3,8 @@ Copyright 2024 Charles Villegas (for McGill Students Running Club)
 
 Copyright 2025 Andrey Gonzalez (for McGill Students Running Club)
 
+Copyright 2025 Mona Liu (for McGill Students Running Club)
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,24 +23,24 @@ const POINTS_EMAIL_NAME = 'Stats Email Template';
 const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
-  'FIRST_NAME' : LEDGER_INDEX.FIRST_NAME,
-  'TPOINTS' : LEDGER_INDEX.TOTAL_POINTS,
-  'LAST_RUN_DATE' : LEDGER_INDEX.LAST_RUN_DATE,
-  'TWEEKS' : LEDGER_INDEX.RUN_STREAK,
-  'TRUNS' : LEDGER_INDEX.TOTAL_RUNS,
-  'TOTAL_DISTANCE' : LEDGER_INDEX.TOTAL_DISTANCE,
-  'TOTAL_ELEVATION' : LEDGER_INDEX.TOTAL_ELEVATION,
+  'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
+  'TPOINTS': LEDGER_INDEX.TOTAL_POINTS,
+  'LAST_RUN_DATE': LEDGER_INDEX.LAST_RUN_DATE,
+  'TWEEKS': LEDGER_INDEX.RUN_STREAK,
+  'TRUNS': LEDGER_INDEX.TOTAL_RUNS,
+  'TOTAL_DISTANCE': LEDGER_INDEX.TOTAL_DISTANCE,
+  'TOTAL_ELEVATION': LEDGER_INDEX.TOTAL_ELEVATION,
 };
 
 const EMAIL_PLACEHOLDER_LABELS = {
-  'distance' : 'DISTANCE',
-  'elapsed_time' : 'DURATION',
-  'average_speed' : 'PACE',
-  'total_elevation_gain' : 'ELEVATION',
-  'max_speed' : 'MSPEED',
-  'mapUrl' : 'RUN_MAP',
-  'id' : 'ACTIVITY_ID',
-  'points' : 'POINTS'
+  'distance': 'DISTANCE',
+  'elapsed_time': 'DURATION',
+  'average_speed': 'PACE',
+  'total_elevation_gain': 'ELEVATION',
+  'max_speed': 'MSPEED',
+  'mapUrl': 'RUN_MAP',
+  'id': 'ACTIVITY_ID',
+  'points': 'POINTS'
 }
 
 
@@ -85,34 +87,32 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(
 function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
-    throw new Error ('Please switch to the McRUN Google Account before sending emails');
+    throw new Error('Please switch to the McRUN Google Account before sending emails');
   }
 
   // Get attendees from log
   const attendees = getLogAttendees_(row);
-  const activityStats = findAndStoreStravaActivity(row);
-
-  // Add headrun points
-  activityStats['points'] = 50;   //todo: REMOVE HARD-CODING
-
-  console.log(activityStats);
-
   if (!attendees) {
     return null && Logger.log(`No recipients found for row: ${row}`);
   }
+  
+  // Get activity and add headrun points from log
+  const activityStats = findAndStoreStravaActivity(row);
+  activityStats['points'] = getEventPointsInRow_(row);
 
   // Extract email and store in arr
-  const recipientArr = 
+  const recipientArr =
     attendees.split('\n').reduce((acc, entry) => {
       const [, email] = entry.split(':');
       acc.push(email);
       return acc;
     }, []
-  );
+    );
 
   const returnStatus = emailMemberStats_(recipientArr, activityStats);
 
-  // Save return status of previous function execution
+  // Print log and save return status of `emailMemberStats`
+  console.log(activityStats);
   logStatus_(returnStatus, logSheet, row);
   Logger.log(`Successfully executed 'sendStatsEmail' and logged messages in sheet`);
 }
@@ -133,7 +133,7 @@ function emailMemberStats_(recipients, activity) {
   for (const email of recipients) {
     const entry = getLedgerEntry(email, ledgerData);
     const memberTotalStats = sheetToEmailLabels(entry);  // Get values for post-run email
-    res.push(emailReport_(email, {...memberTotalStats, ...targetStats}));
+    res.push(emailReport_(email, { ...memberTotalStats, ...targetStats }));
   }
   return res;
 
@@ -159,14 +159,14 @@ function emailReport_(email, memberStats) {
   const emailTemplate = STATS_EMAIL_OBJ;  // String instead of HTML template
 
   // Append general data to activity stats (e.g. current year)
-  const generalData = {'THIS_YEAR' : `${new Date().getFullYear()}`};
-  memberStats = {...memberStats, ...generalData};
+  const generalData = { 'THIS_YEAR': `${new Date().getFullYear()}` };
+  memberStats = { ...memberStats, ...generalData };
 
   const msgObj = fillInTemplateFromObject_(emailTemplate, memberStats);
 
   MailApp.sendEmail({
     //to: email
-    to : 'andrey.gonzalez@mail.mcgill.ca',
+    to: 'andrey.gonzalez@mail.mcgill.ca',
     subject: emailTemplate.subject,
     htmlBody: msgObj.html,
     name: 'McGill Students Running Club'
@@ -175,7 +175,6 @@ function emailReport_(email, memberStats) {
   // Log confirmation for the sent email with member stats
   return `Stats email sent to ${email}.`;
 }
-
 
 
 /**
