@@ -103,7 +103,7 @@ function getStravaService_() {
     /** Set the property store where authorized tokens should be persisted */
     .setPropertyStore(PropertiesService.getUserProperties())
     .setScope(scope)
-  ;
+    ;
 }
 
 
@@ -124,5 +124,102 @@ function authCallback_(request) {
   } else {
     return HtmlService.createHtmlOutput('Denied. You can close this tab');
   }
+}
+
+
+
+/**
+ * Makes an API request to the given endpoint with the given query.
+ * 
+ * Inspired by original function `run` in `apps-script-oauth2/samples/Strava.gs`
+ * 
+ * @param {string} endpoint  Strava API endpoint.
+ * 
+ * @param {object} [query_object = {}]  Param-value pair.
+ *                                      Defaults to empty object.
+ * 
+ * @return {string}  Response of API call.
+ * 
+ * ### Sample script
+ * ```javascript
+ * const endpoint = 'clubs/693906/activities';
+ * const queryObj = {"param1": val1, "param2": val2};
+ * const response = callStravaAPI(endpoint, queryObj);
+ * ```
+ * 
+ * ### Info
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Nov 7, 2024
+ * @update  Mar 23, 2025
+ */
+
+function callStravaAPI_(endpoint, query_object = {}) {
+  // Set up the service
+  const service = getStravaService_();
+
+  // Verify is access authorized already
+  if (!service.hasAccess()) {
+    // Display authorization url and exit
+    return prettyLog_(
+      'App has no access yet.',
+      'Open the following URL to gain authorization from Strava and re-run the script.',
+      service.getAuthorizationUrl()
+    );
+  }
+
+  // Authorization completed.
+  Logger.log('App has access.');
+
+  // Get API endpoint
+  endpoint = STRAVA_BASE_URL + endpoint;
+  const query_string = queryObjToString_(query_object);
+
+  const headers = {
+    Authorization: 'Bearer ' + service.getAccessToken(),
+  };
+
+  const options = {
+    headers: headers,
+    method: 'GET',
+    muteHttpExceptions: false,
+  };
+
+  // Return Strava API response
+  const urlString = endpoint + query_string;
+  return JSON.parse(UrlFetchApp.fetch(urlString, options));
+}
+
+
+/**
+ * Maps an Object containing param-value pairs to a query string.
+ *  
+ * @param {object} query_objec]  Param-value pair.
+ * @return {string}  String value of query object.
+ * 
+ * ### Sample script
+ * ```javascript
+ * const queryObj = {"param1": val1, "param2": val2};
+ * const ret = queryObjToString(queryObj);
+ * Logger.log(ret)  // "?param1=val1&param2=val2"
+ * ```
+ * 
+ * ### Info
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Nov 7, 2024
+ * @update  Mar 31, 2025
+ */
+
+function queryObjToString_(query_object) {
+  if (query_object.length === 0) return '';   // Check if object empty
+
+  const query_string = Object.entries(query_object)
+    .map(([param, value]) => `${param}=${value}`)
+    .join('&');
+
+  return '?' + query_string;
 }
 

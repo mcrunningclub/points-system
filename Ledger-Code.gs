@@ -28,7 +28,6 @@ limitations under the License.
  */
 
 
-
 // CURRENTLY IN REVIEW!
 function newSubmission() {
   formatSpecificColumns();
@@ -74,7 +73,7 @@ function getSubmissionTimestamp(row = getValidLastRow(LOG_SHEET)) {
 
 function getValidLastRow(sheet) {
   let lastRow = sheet.getLastRow();
-  
+
   while (sheet.getRange(lastRow, 1).getValue() == "") {
     lastRow = lastRow - 1;
   }
@@ -113,13 +112,10 @@ function getLogAttendees_(row) {
 /**
  * Get ledger data from `LEDGER_SHEET` to send emails.
  * 
- * @param {number} [start = LEDGER_COL_COUNT]  The number of rows to get starting from email col. 
- *                                             Defaults to last col before events (`LEDGER_COL_COUNT`).
+ * @param {number} [numCols = LEDGER_COL_COUNT]  The number of rows to get starting from email col. 
+ *                                               Defaults to last col before events (`LEDGER_COL_COUNT`).
  * 
- * @return {Object[][]}  Returns the 1-indexed row number where the email is found, 
- *                        or `null` if the email is not found.
- * 
- * @example `const submissionRowNumber = findMemberByBinarySearch('example@mail.com', getLedgerData());`
+ * @return {Object[][]}  Ledger data of col size `numCols`.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
  * @date  Mar 23, 2025
@@ -128,7 +124,7 @@ function getLogAttendees_(row) {
 
 function getLedgerData_(numCols = LEDGER_COL_COUNT) {
   const pointSheet = LEDGER_SHEET;
-  
+
   // Define dimensions of sheet data
   const startCol = 1;
   const startRow = 2;
@@ -168,7 +164,7 @@ function findMemberInLedger_(emailToFind, ledger) {
   const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;   // Make 0-indexed
   return findThisEmailBinarySearch();
 
-  /** Define as inner function to prevent passing `emailToFind` and `ledger` at every call */ 
+  /** Define as inner function to prevent passing `emailToFind` and `ledger` at every call */
   function findThisEmailBinarySearch(start = 1, end = ledger.length) {
     // Base case: If start index exceeds the end index, the email is not found
     if (start > end) {
@@ -196,26 +192,5 @@ function findMemberInLedger_(emailToFind, ledger) {
       return findThisEmailBinarySearch(start, mid - 1);
     }
   };
-}
-
-
-function test_() {
-  //var date = "2023-10-18 20:04:53";
-  //var headrun = "Wednesday 6pm (Intermediate Run)";
-  
-  //Logger.log(formatDateNote(date, headrun));
-
-  //const attendees = "James lee , darius  Corb, carly cake";
-  const attendees = "James lee \n darius Corb\ncarly cake ";
-
-  var splitArray = attendees.split('\n');  // split the string into an array;
-  if (splitArray.length < 2) splitArray = attendees.split(',');  // split the string into an array;
-
-  // Trim whitespace from strings and set to Title Case
-  var formattedAttendees = splitArray.map(str => str.trim());   
-  formattedAttendees = formattedAttendees.map(str => toTitleCase(str));
-  
-  var newValue = formattedAttendees.join('\n');       // combine all array elements into single string
-  Logger.log(newValue);
 }
 

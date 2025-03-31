@@ -18,7 +18,7 @@ limitations under the License.
 
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
 const POINTS_EMAIL_NAME = 'Stats Email Template';
-const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap?";
+const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
   feeStatus : LEDGER_INDEX.FEE_STATUS,
@@ -187,38 +187,12 @@ function checkAndSendReminderEmail() {
     throw new Error('Please switch to the McRUN Google Account before sending emails');
   }
 
-  // points spreadsheet (currently the test page)
-  const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
-  // columns (0 indexed)
-  const EMAIL_COL = 0;
-  const FNAME_COL = 2;
-  const LAST_RUN_COL = 8;
+  // get current date
 
-  // make date object for 2 weeks ago
-  let dateThreshold = new Date();
-  dateThreshold.setDate(dateThreshold.getDate() - 14);
+  // check all member entries who have a "last run" date
+  // make list of emails and first names?
 
-  // get all data entries as 2d array (row, col)
-  let allMembers = POINTS_SHEET.getDataRange().getValues();
-
-  // loop through member entries (questionable efficiency)
-  // except first row which is the header
-  for (let i = 1; i < allMembers.length; i++) {
-    // check for last run date
-    let member = allMembers[i];
-    let lastRunAsStr = member[LAST_RUN_COL];
-
-    // skip rows with no data
-    if (lastRunAsStr != '') { 
-      // convert last run date into date object
-      let lastRunAsDate = new Date(lastRunAsStr);
-
-      // send reminder email if needed
-      if (lastRunAsDate < dateThreshold) {
-        sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
-      }
-    }
-  }
+  // loop through members and get info
 
 
 }
@@ -239,7 +213,7 @@ function sendReminderEmail_(name, email) {
   // set up email using template
   const template = HtmlService.createTemplateFromFile('reminderemail');
   template.FIRST_NAME = name;
-  let filledTemplate = template.evaluate();
+  const filledTemplate = template.evaluate();
 
   // send email
   try {
@@ -293,41 +267,6 @@ function mailMemberPointsV1_(trimmedName, email, points) {
 
   // Log confirmation for the sent email with values for each variable
   Logger.log(`Email sent to ${trimmedName} at ${email} with ${points} points.`);
-}
-
-
-/**
- * Google Maps API for headrun map creation
- */
-
-function buildPostUrl_(polyline, imgSize = "580x420") {
-  // URL Parameters
-  const propertyStore = PropertiesService.getScriptProperties();
-  const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
-
-  const googleCloudMapId = 'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
-
-  //Google Static Maps API URL
-  return MAPS_BASE_URL +
-    `size=${imgSize}&` +
-    `map_id=${googleCloudMapId}&` +
-    `path=enc:${polyline}&` + 
-    `key=${apiKey}`;
-}
-
-
-function postToMakeWebhook_(postUrl, timestamp) {
-  const webhookUrl = "https://hook.us1.make.com/8obb3hb6bzwgi7s4nyi8yfghb3kxsksc";
-  const payload = JSON.stringify({ url: postUrl, name : timestamp });
-
-  const options = {
-    method: "post",
-    contentType: "application/json",
-    payload: payload
-  };
-
-  const response = UrlFetchApp.fetch(webhookUrl, options);
-  Logger.log("Response: " + response.getContentText());
 }
 
 

@@ -71,7 +71,7 @@ function testRuntime() {
  * Sends email using member information.
  * 
  * @author  Martin Hawksey (2022)
- * @update  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
+ * @author2  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
  * 
  * @param {{key:value<string>}} memberInformation  Information to populate email draft
  * @return {{message:string, isError:bool}}  Status of sending email.
@@ -115,7 +115,7 @@ function sendEmail_(memberInformation) {
  * Get a Gmail draft message by matching the subject line.
  * 
  * @author  Martin Hawksey (2022)
- * @update  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
+ * @author2  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
  * 
  * @param {string} subjectLine to search for draft message
  * @return {object} containing the subject, plain and html message body and attachments
@@ -207,7 +207,6 @@ function getGmailTemplateFromDrafts(subjectLine = DRAFT_SUBJECT_LINE){
       console.log(key + " has value... " + value);
     }
 
-
     return draftObj;
      
   } catch(e) {
@@ -220,7 +219,7 @@ function getGmailTemplateFromDrafts(subjectLine = DRAFT_SUBJECT_LINE){
  * Filter draft objects with the matching subject line message by matching the subject line.
  * 
  * @author  Martin Hawksey (2022)
- * @update  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
+ * @author2  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
  * 
  * @param {string} subjectLine to search for draft message
  * @return {object} GmailDraft object

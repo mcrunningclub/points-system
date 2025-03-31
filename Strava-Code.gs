@@ -28,15 +28,15 @@ const SCRIPT_PROPERTY_KEYS = {
 };
 
 const LOG_TARGETS = {
-  'id' : LOG_INDEX.STRAVA_ACTIVITY_ID,      // (long)
-  'name' : LOG_INDEX.STRAVA_ACTIVITY_NAME,  // (string)
-  'distance' : LOG_INDEX.DISTANCE_STRAVA,   // meters (float)
-  'elapsed_time' : LOG_INDEX.ELAPSED_TIME,  // seconds (int)
-  'average_speed' : LOG_INDEX.PACE,   // m per sec (float)
-  'max_speed' : LOG_INDEX.MAX_SPEED,  // m per sec (float)
-  'total_elevation_gain' : LOG_INDEX.ELEVATION,   // meters (float)
-  'map' : LOG_INDEX.MAP_POLYLINE,
-  'mapUrl' : LOG_INDEX.MAP_URL,
+  'id': LOG_INDEX.STRAVA_ACTIVITY_ID,      // (long)
+  'name': LOG_INDEX.STRAVA_ACTIVITY_NAME,  // (string)
+  'distance': LOG_INDEX.DISTANCE_STRAVA,   // meters (float)
+  'elapsed_time': LOG_INDEX.ELAPSED_TIME,  // seconds (int)
+  'average_speed': LOG_INDEX.PACE,         // m per sec (float)
+  'max_speed': LOG_INDEX.MAX_SPEED,        // m per sec (float)
+  'total_elevation_gain': LOG_INDEX.ELEVATION,   // meters (float)
+  'map': LOG_INDEX.MAP_POLYLINE,
+  'mapUrl': LOG_INDEX.MAP_URL,
 };
 
 // Simple logging of multi-line message. Improves readability in code.
@@ -50,42 +50,31 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
 function stravaPlayground() {
   /** Club member example */
   function runExample(label) {
-    switch(label) {
-      case 'A' : {
+    switch (label) {
+      case 'A': {
         /** Club activites example */
         var endpoint = 'clubs/693906/members'
-        var query_object = {"include_all_efforts" : true};
+        var query_object = { "include_all_efforts": true };
         return callStravaAPI_(endpoint, query_object);
-        
+
       }
 
-      case 'B' : {
+      case 'B': {
         /** Club activites example */
         var endpoint = 'activities/13889807290';
-        var response = callStravaAPI_(endpoint, {"include_all_efforts" : true});
-
+        var response = callStravaAPI_(endpoint, { "include_all_efforts": true });
         return response["map"]["polyline"];
-        //return extractRunStats_(response[0]);
       }
 
-      case 'C' : {
+      case 'C': {
         /** Individual athlete example */
         var endpoint = 'athletes/13968699602/stats' // 'athlete/activities';
         var response = callStravaAPI_(endpoint, {})[0];
-        getMapBlob(response['map']['summary_polyline'], 'example.png');
-        return extractRunStats_(response);
-      }
-
-      case 'D' : {
-        /** Activity tagged by headrunner */
-        const timestamp = new Date('2025-02-22 10:00:00');
-        const upperLimit = 3600 * 1000;   // 1 hour in milliseconds
-        const upperTimestamp = new Date(timestamp.getTime() + upperLimit);
-        return saveMapForRun_(timestamp, upperTimestamp);
+        getMapBlob_(response['map']['summary_polyline'], 'example.png');
       }
     }
   }
-  
+
   // Choose which function to run and log response
   const response = runExample('E');
   console.log('Result: ' + response);
@@ -97,8 +86,9 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
   const timestamp = getSubmissionTimestamp(row);
 
   // Save stats to log sheet and store map to Drive.
-  // Filename is timestamp. Download url added to `activity`
-  const activity = saveStravaStats_(row, timestamp);
+  // Filename is timestamp. Download url added to `activity` obj
+  const activity = saveStravaStats_(timestamp);
+  setStravaStats_(row, activity);
 
   return activity;
 }
@@ -108,109 +98,38 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
  * 
  * @param {Date} submissionTimestamp  Date representation of headrun timestamp.
  * @param {Date} maxDate  Max timestamp for map search.
+ * 
+ * @return {Object}  Strava activity with appended mapUrl
  *
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  Mar 27, 2025
+ * @update  Mar 31, 2025
  */
 
-function saveStravaStats_(row, submissionTimestamp, maxDate = new Date()) {
+function saveStravaStats_(submissionTimestamp, maxDate = new Date()) {
   // Get Unix Epoch value of timestamps to define search range
   const toTimestamp = getUnixEpochTimestamp_(maxDate);
   const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp);
 
   // Get activity with time constraints
-  const activity = getStravaActivity(fromTimestamp, toTimestamp);
+  const activity = getStravaActivity_(fromTimestamp, toTimestamp);
 
-  // Extract polyline and save headrun as map
+  // Extract polyline and save headrun route as map
   const polyline = activity['map']['polyline'];
   const name = submissionTimestamp.getString();
   saveMapForRun_(polyline, name)
 
   // Get download url from file and add to `activity`
-  const mapDownloadUrl = getMapFile(name).getDownloadUrl();
+  const mapDownloadUrl = getMapFile_(name).getDownloadUrl();
   activity['mapUrl'] = mapDownloadUrl;
 
-  // Save activity to row in sheet
-  setStravaStats_(row, activity);
   return activity;
 }
 
 
-function getMapFile(name) {
-  return DriveApp.searchFiles(`title contains '${name}'`).next();
-}
-
-function setStravaStats_(row, activity) {
-  const sheet = LOG_SHEET;
-  const statsMap = LOG_TARGETS;
-  const statsArr = Object.entries(statsMap);
-
-  // Get range from Strava Account to Map Polyline
-  const startCol = LOG_INDEX.STRAVA_ACCOUNT;
-  const size = statsArr.length;
-  const rangeToSet = sheet.getRange(row, startCol, 1, size);
-
-  // Extract from activity and set in sheet
-  const offset = size - 1;
-  const extracted = extractRunStats_(activity, statsArr, offset);
-  rangeToSet.setValues([extracted]);
-
-  // Log success mesage
-  Logger.log('Successfully imported Strava activity to Log Sheet!');
-}
-
-
-/**
- * Change the units from Strava activity to user-friendly units.
- * 
- * @param {Object} activity  Strava activity.
- * @param {Boolean} isMetric  True if metric system is used, else imperial system.
- * @return {Object}  Converted Strava activity.
- *
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- * @date  Mar 30, 2025
- * @update  Mar 30, 2025
- */
-
-function convertUnits_(activity, isMetric) {
-  const result = {};
-  const units = getDict();
-
-  for (const key of Object.keys(activity)) {
-    const op = (key === 'average_speed') ? (a, b) => b / a : (a, b) => a * b;
-    result[key] = op(activity[key], units[key]);
-  }
-
-  return result;
-
-  /** Returns the stat to unit mapping according to `isMetric` */
-  function getDict() {
-    const SEC_TO_MIN = 1/60;
-
-    /** Metric Conversions  */
-    const METRE_PER_SEC_TO_KM_TO_H = 3.6;
-    const METRE_PER_SEC_TO_KM_PER_MIN = 100/6;
-    const M_TO_KM = 1/1000;
-
-    /** US Imperial Conversions  */
-    const METRE_PER_SEC_TO_MILES_TO_H = 2.237;
-    const METRE_PER_SEC_TO_MILES_PER_MIN = 26.822;
-    const M_TO_MILES = 1/1609;
-
-    return {
-      'distance' : isMetric ? M_TO_KM : M_TO_MILES,
-      'elapsed_time' : SEC_TO_MIN,
-      'average_speed' : isMetric ? METRE_PER_SEC_TO_KM_PER_MIN : METRE_PER_SEC_TO_MILES_PER_MIN,
-      'max_speed' : isMetric ? METRE_PER_SEC_TO_KM_TO_H : METRE_PER_SEC_TO_MILES_TO_H,
-    }
-  }
-}
-
-
-function getStravaActivity(fromTimestamp, toTimestamp) {
+/** Get Strava Activity in the input range */
+function getStravaActivity_(fromTimestamp, toTimestamp) {
   // Package query for Strava API
   const queryObj = { 'after': fromTimestamp, 'before': toTimestamp };
 
@@ -223,107 +142,31 @@ function getStravaActivity(fromTimestamp, toTimestamp) {
     throw new Error(errorMessage);
   }
 
-  const activity = response[0];  // Assume first activity is the target
-  return activity;
+  return response[0];  // Assume first activity is the target
 }
 
 
-/**
- * Makes an API request to the given endpoint with the given query.
- * 
- * Inspired by original function `run` in `apps-script-oauth2/samples/Strava.gs`
- * 
- * @param {string} endpoint  Strava API endpoint.
- * 
- * @param {object} [query_object = {}]  Param-value pair.
- *                                      Defaults to empty object.
- * 
- * @return {string}  Response of API call.
- * 
- * ### Sample script
- * ```javascript
- * const endpoint = 'clubs/693906/activities';
- * const queryObj = {"param1": val1, "param2": val2};
- * const response = callStravaAPI(endpoint, queryObj);
- * ```
- * 
- * ### Info
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- * @date  Nov 7, 2024
- * @update  Mar 23, 2025
- */
-
-function callStravaAPI_(endpoint, query_object = {}) {
-  // Set up the service
-  const service = getStravaService_();
-
-  // Verify is access authorized already
-  if (!service.hasAccess()) {
-    // Display authorization url and exit
-    return prettyLog_(
-      'App has no access yet.',
-      'Open the following URL to gain authorization from Strava and re-run the script.',
-      service.getAuthorizationUrl()
-    ); 
-  }
-
-  // Authorization completed.
-  Logger.log('App has access.');
-  
-  // Get API endpoint
-  endpoint = STRAVA_BASE_URL + endpoint;
-  const query_string = queryObjToString_(query_object);
-
-  const headers = {
-    Authorization: 'Bearer ' + service.getAccessToken()
-  };
-
-  const options = {
-    headers: headers,
-    method: 'GET',
-    muteHttpExceptions: false,
-  };
-
-  // Return Strava API response
-  const urlString = endpoint + query_string;
-  return JSON.parse(UrlFetchApp.fetch(urlString, options));
+function getMapFile_(name) {
+  return DriveApp.searchFiles(`title contains '${name}'`).next();
 }
 
 
-/**
- * Maps an Object containing param-value pairs to a query string.
- *  
- * @param {object} [query_object = {}]  Param-value pair.
- *                                      Defaults to empty object.
- * 
- * @return {string}  String value of query object.
- * 
- * ### Sample script
- * ```javascript
- * const queryObj = {"param1": val1, "param2": val2};
- * const ret = queryObjToString(queryObj);
- * Logger.log(ret)  // "?param1=val1&param2=val2"
- * ```
- * 
- * ### Info
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- * @date  Nov 7, 2024
- * @update  Mar 22, 2025
- */
+function setStravaStats_(row, activity) {
+  const sheet = LOG_SHEET;
+  const statsMap = Object.entries(LOG_TARGETS);
 
-function queryObjToString_(query_object = {}) {
-  // Check if object empty
-  if (query_object.length === 0) {
-    return '';
-  }
-  const param_value_list = Object.entries(query_object);
-  const param_strings = param_value_list.map(([param, value]) => `${param}=${value}`);
-  const query_string = param_strings.join('&');
-  return '?' + query_string;
+  // Get range from Strava Account to Map Polyline
+  const startCol = LOG_INDEX.STRAVA_ACCOUNT;
+  const size = statsMap.length;
+  const rangeToSet = sheet.getRange(row, startCol, 1, size);
+
+  // Extract from activity and set in sheet
+  const offset = size - 1;
+  const extracted = extractRunStats_(activity, statsMap, offset);
+  rangeToSet.setValues([extracted]);
+
+  // Log success mesage
+  Logger.log('Successfully imported Strava activity to Log Sheet!');
 }
 
 
@@ -368,48 +211,58 @@ function extractRunStats_(activity, statsMap, offset = 0) {
 }
 
 
-function saveMapForLatestRun() {
-  const submissionTimestamp = getLatestSubmissionTimestamp();
-  saveMapForRun_(submissionTimestamp);
-}
-
-
 /**
- * Takes a Strava API response for a given activity and saves an
- * image of the map to the desired location.
+ * Save polyline as image using Google Map API and Make.com automation.
  * 
- * @param {string} polyline  A encoded polyline representing a path.
- * @param {string} filename  Name to save file as.
+ * @param {string} polyline  Encoded Google Map polyline string.
+ * @param {string} name  Name for map.
  * 
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- * @date  Dec 1, 2024
- * @update  Mar 25, 2025
+ * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date  Mar 27, 2025
+ * @update  Mar 31, 2025
  */
 
-function getMapBlob(polyline, filename) {
-  if (!polyline) {
-    return Logger.log('Map cannot be created: no polyline found for this activity');
-  }
-  
-  const runMap = Maps.newStaticMap();
-  runMap.addPath(polyline);
-
-  // Save runMap as as image to specified location
-  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', filename);
-  
-  // Display success message
-  Logger.log(`Successfully created map blob as ${filename}.png`);
-  return mapBlob;
+function saveMapForRun_(polyline, name) {
+  const postUrl = buildPostUrl_(polyline, "580x420");
+  postToMakeWebhook_(postUrl, name);
 }
 
 
+/** Helper 1: Construct postUrl for Make webhook */
+function buildPostUrl_(polyline, imgSize = "580x420") {
+  const propertyStore = PropertiesService.getScriptProperties();
+  const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
+
+  const googleCloudMapId = 'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
+
+  const queryObj = {
+    size: imgSize,
+    map_id: googleCloudMapId,
+    key: apiKey,
+    path: 'enc:' + polyline,
+  }
+
+  return MAPS_BASE_URL + queryObjToString_(queryObj);
+}
+
+/** Helper 2: Call Make webhook */
+function postToMakeWebhook_(postUrl, mapName) {
+  const webhookUrl = "https://hook.us1.make.com/8obb3hb6bzwgi7s4nyi8yfghb3kxsksc";
+  const payload = JSON.stringify({ url: postUrl, name: mapName });
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: payload
+  };
+
+  const response = UrlFetchApp.fetch(webhookUrl, options);
+  Logger.log("Response: " + response.getContentText());
+}
+
 
 /**
- * Takes a Strava API response for a given activity.
- * 
- * Save the map as `MAPS_FOLDER/<Unix Epoch timestamp of submission>.png`
+ * Save the map of a Strava activity as `MAPS_FOLDER/<Unix Epoch timestamp>.png`
  * 
  * @deprecated  Use Make Webhook instead.
  * 
@@ -428,17 +281,17 @@ function saveMapAsBlob_(polyline, timestamp) {
     return Logger.log('Map cannot be created: no polyline found for this activity');
   }
 
-  const runMap = Maps.setAuthentication().newStaticMap()
-   .setMapType(Maps.StaticMap.Type.ROADMAP)
-   .setPathStyle(6, Maps.StaticMap.Color.RED, "0x00000000")
-   .addPath(polyline)
-  ;
+  const runMap = Maps.newStaticMap()
+    .setMapType(Maps.StaticMap.Type.ROADMAP)
+    .setPathStyle(6, Maps.StaticMap.Color.RED, "0x00000000")
+    .addPath(polyline)
+    ;
 
   // Get save locati on using timestamp
   const saveLocation = getSaveLocation(timestamp);
 
   // Save runMap as as image to specified location
-  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', saveLocation)
+  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', saveLocation);
   const file = DriveApp.createFile(mapBlob);
 
   // Display success message
@@ -455,19 +308,9 @@ function saveMapAsBlob_(polyline, timestamp) {
 }
 
 
-function saveMapForRun_(polyline, name) {  
-  // Save polyline as image using Google Map API and Make Automations
-  postToMakeWebhook_(polyline, name);
-}
-
-
-/**
- * Example scripts to save routes using Google Maps API
- */
-
-function createMinimalistRouteMap_(encodedPolyline) {
+function createMinimalistRouteMap_(polyline) {
   const propertyStore = PropertiesService.getScriptProperties();
-  const apiKey = propertyStore.getProperty(myScriptKeys.googleMapAPI); // Replace with your API Key
+  const apiKey = propertyStore.getProperty(myScriptKeys.googleMapAPI);
 
   // Create a new static map
   const map = Maps.newStaticMap()
@@ -475,7 +318,7 @@ function createMinimalistRouteMap_(encodedPolyline) {
     .setFormat(Maps.StaticMap.Format.PNG)
     .setMapType(Maps.StaticMap.Type.ROADMAP) // Use ROADMAP for a minimalist style
     .setPathStyle(3, "0x000000FF", "0x00000000") // Thin black route line, transparent fill
-    .addPath(encodedPolyline);
+    .addPath(polyline);
 
   // Get the URL of the generated static map
   const mapUrl = `${map.getMapUrl()}&key=${apiKey}`;
@@ -483,4 +326,3 @@ function createMinimalistRouteMap_(encodedPolyline) {
 
   return mapUrl;
 }
-
