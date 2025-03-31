@@ -21,13 +21,13 @@ const POINTS_EMAIL_NAME = 'Stats Email Template';
 const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
-  FIRST_NAME : LEDGER_INDEX.FIRST_NAME,
-  TPOINTS : LEDGER_INDEX.TOTAL_POINTS,
-  LAST_RUN_DATE : LEDGER_INDEX.LAST_RUN_DATE,
-  TWEEKS : LEDGER_INDEX.RUN_STREAK,
-  TRUNS : LEDGER_INDEX.TOTAL_RUNS,
-  TOTAL_DISTANCE : LEDGER_INDEX.TOTAL_DISTANCE,
-  TOTAL_ELEVATION: LEDGER_INDEX.TOTAL_ELEVATION,
+  'FIRST_NAME' : LEDGER_INDEX.FIRST_NAME,
+  'TPOINTS' : LEDGER_INDEX.TOTAL_POINTS,
+  'LAST_RUN_DATE' : LEDGER_INDEX.LAST_RUN_DATE,
+  'TWEEKS' : LEDGER_INDEX.RUN_STREAK,
+  'TRUNS' : LEDGER_INDEX.TOTAL_RUNS,
+  'TOTAL_DISTANCE' : LEDGER_INDEX.TOTAL_DISTANCE,
+  'TOTAL_ELEVATION' : LEDGER_INDEX.TOTAL_ELEVATION,
 };
 
 const EMAIL_PLACEHOLDER_LABELS = {
@@ -127,13 +127,13 @@ function emailMemberStats_(recipients, activity) {
 
   // Transform key labels in Strava to placeholder names in email
   convertAllUnits_(activity, true);
-  const targetStats = stravaToEmailLabels(activity);
+  const targetStats = prepareEmailFields(activity);
 
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
     const entry = getLedgerEntry(email, ledgerData);
     const memberTotalStats = sheetToEmailLabels(entry);  // Get values for post-run email
-    res.push(sendStatsEmail_(email, {...memberTotalStats, ...targetStats}));
+    res.push(emailReport_(email, {...memberTotalStats, ...targetStats}));
   }
   return res;
 
@@ -145,7 +145,7 @@ function emailMemberStats_(recipients, activity) {
     );
   }
 
-  function stravaToEmailLabels(data) {
+  function prepareEmailFields(data) {
     return Object.entries(EMAIL_PLACEHOLDER_LABELS).reduce((acc, [objKey, emailKey]) => {
       acc[emailKey] = data[objKey] || "";
       return acc;
@@ -155,7 +155,7 @@ function emailMemberStats_(recipients, activity) {
 
 
 /** ⭐️ Actual function that sends email ⭐️ */
-function sendStatsEmail_(email, memberStats) {
+function emailReport_(email, memberStats) {
   const emailTemplate = STATS_EMAIL_OBJ;  // String instead of HTML template
 
   // Append general data to activity stats (e.g. current year)
@@ -164,14 +164,13 @@ function sendStatsEmail_(email, memberStats) {
 
   const msgObj = fillInTemplateFromObject_(emailTemplate, memberStats);
 
-  MailApp.sendEmail(
+  MailApp.sendEmail({
     //to: email
-    'andreysebastian10.g@gmail.com',
-    emailTemplate.subject,
-    msgObj.text, { 
-      htmlBody: msgObj.html,
-    }
-  );
+    to : 'andrey.gonzalez@mail.mcgill.ca',
+    subject: emailTemplate.subject,
+    htmlBody: msgObj.html,
+    name: 'McGill Students Running Club'
+  });
 
   // Log confirmation for the sent email with member stats
   return `Stats email sent to ${email}.`;

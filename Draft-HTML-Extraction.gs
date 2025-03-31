@@ -22,11 +22,6 @@ function saveDraftAsHtml() {
  */
 
 function generateHtmlFromDraft_(subjectLine) {
-  // Prevent email sent by wrong user
-  if (getCurrentUserEmail_() != 'mcrunningclub@ssmu.ca') {
-    throw new Error ('Please switch to the McRUN Google Account before sending emails');
-  }
-
   const datetime = Utilities.formatDate(new Date(), TIMEZONE, 'MMM-dd\'T\'hh.mm');
   const baseName = subjectLine.replace(/ /g, '-').toLowerCase();
 
@@ -40,8 +35,6 @@ function generateHtmlFromDraft_(subjectLine) {
   // Save html file in drive
   DriveApp.createFile(fileName, msgObj.html);
 }
-
-
 
 
 

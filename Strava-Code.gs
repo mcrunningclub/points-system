@@ -120,11 +120,6 @@ function getStravaStats_(submissionTimestamp, maxDate = new Date()) {
   }
 
   // Extract polyline and save headrun route as map
-
-  activity['mapUrl'] = 'https://drive.google.com/uc?id=1KV9ZXr4gkc0UwQFTJcDuTKa4GgVQzDLm&export=download'
-  return activity;
-
-  
   const polyline = activity['map']['polyline'] ?? activity['map']['summary_polyline'];
   if (polyline) {
     const response = saveMapForRun_(polyline, fromTimestamp).getHeaders();
