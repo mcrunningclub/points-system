@@ -126,8 +126,8 @@ function emailMemberStats_(recipients, activity) {
   const res = [];
 
   // Transform key labels in Strava to placeholder names in email
-  convertAllUnits_(activity, true);
-  const targetStats = prepareEmailFields(activity);
+  convertAndFormatStat(activity, true);
+  const targetStats = filterEmailValues(activity);
 
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
@@ -141,11 +141,11 @@ function emailMemberStats_(recipients, activity) {
   function sheetToEmailLabels(entry) {
     return Object.fromEntries(
       Object.entries(EMAIL_LEDGER_TARGETS).map(
-        ([label, index]) => [label, entry[index - 1]]) // Convert 1-based index to 0-based
+        ([label, index]) => [label, entry[index - 1] || 0]) // Convert 1-based index to 0-based
     );
   }
 
-  function prepareEmailFields(data) {
+  function filterEmailValues(data) {
     return Object.entries(EMAIL_PLACEHOLDER_LABELS).reduce((acc, [objKey, emailKey]) => {
       acc[emailKey] = data[objKey] || "";
       return acc;
@@ -156,7 +156,12 @@ function emailMemberStats_(recipients, activity) {
 
 /** ⭐️ Actual function that sends email ⭐️ */
 function emailReport_(email, memberStats) {
-  const emailTemplate = STATS_EMAIL_OBJ;  // String instead of HTML template
+  // Create copies of emailTemplate properties
+  const emailTemplate = {
+    subject : STATS_EMAIL_OBJ.subject,
+    text : STATS_EMAIL_OBJ.text,
+    html : STATS_EMAIL_OBJ.html,
+  };
 
   // Append general data to activity stats (e.g. current year)
   const generalData = { 'THIS_YEAR': `${new Date().getFullYear()}` };
@@ -166,7 +171,7 @@ function emailReport_(email, memberStats) {
 
   MailApp.sendEmail({
     //to: email
-    to: 'andrey.gonzalez@mail.mcgill.ca',
+    to: 'andreysebastian10.g@gmail.com',
     subject: emailTemplate.subject,
     htmlBody: msgObj.html,
     name: 'McGill Students Running Club'

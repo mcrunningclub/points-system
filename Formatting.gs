@@ -16,22 +16,19 @@ limitations under the License.
 
 
 /** 
- * Sorts sheet by first name ascending.
+ * Sorts log sheet by event timestamp ascending.
  * 
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Nov 28, 2023
- * @update  Nov 28, 2023
+ * @update  Mar 31, 2025
  */
 
-function sortNameByAscending() {
-  var sheet = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
+function sortTimestampByAscending() {
+  const sheet = LOG_SHEET;
 
-  // Sort all the way to the last row, without the header row
+  // Sort timestamps in ascending order, without the header row
   const range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
-
-  // Sorts values by the `First Name` column in ascending order
   range.sort(3);
-  return;
 }
 
 
@@ -40,7 +37,7 @@ function sortNameByAscending() {
  * 
  * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Oct 30, 2023
- * @update  Oct 30, 2023
+ * @update  Mar 31, 2025
  */
 
 function formatSpecificColumns() {
@@ -59,14 +56,14 @@ function formatSpecificColumns() {
   rangeIsAdded.insertCheckboxes();  // Add checkbox
 
   // Formats only last row of attendees
-  var attendeesCell = sheet.getRange(getValidLastRow(sheet), 5);
+  let attendeesCell = sheet.getRange(getValidLastRow(sheet), 5);
 
   if (attendeesCell.toString().length > 1) {
-    var splitArray = attendeesCell.getValue().split('\n');  // split the string into an array;
+    let splitArray = attendeesCell.getValue().split('\n');  // split the string into an array;
     if (splitArray.length < 2) splitArray = attendeesCell.getValue().split(',');  // split the string into an array;
 
     // Trim whitespace from strings and set to Title Case
-    var formattedAttendees = splitArray.map(str => str.trim());
+    let formattedAttendees = splitArray.map(str => str.trim());
     formattedAttendees = formattedAttendees.map(str => toTitleCase(str));
 
     var newValue = formattedAttendees.join('\n');       // combine all array elements into single string
@@ -106,45 +103,75 @@ function toTitleCase(inputString) {
  * @update  Mar 31, 2025
  */
 
-function convertAllUnits_(activity, isMetric) {
+function convertAndFormatStat(activity, isMetric) {
   const units = getUnitsMap_(isMetric);
+  const formats = getNumberFormatMap(); 
 
-  for (const [key, constant] of Object.entries(units)) {
-    const op = (key === 'average_speed') ? (a, b) => b / a : (a, b) => a * b;
-    activity[key] = op(activity[key], constant);
+  Object.entries(activity).forEach(([key, value]) => {
+    if (!(key in units)) return;
+    const convertedVal = convertUnit_(key, value);
+    activity[key] = formatNumber(key, convertedVal);
+  });
+
+  function convertUnit_(type, value) {
+    if (type === 'average_speed') {
+      return units[type] / value;
+    }
+    return value * units[type];
+  };
+
+  function formatNumber(key, value) {
+    return formats[key](value);
   }
 }
-
-
-function convertUnit_(type, value, isMetric) {
-  const units = getUnitsMap_(isMetric);
-
-  if (type === 'average_speed') {
-    return units[type] / value;
-  }
-
-  return value / units[type];
-}
-
 
 /** Returns the stat to unit conversion mapping in metric or imperial*/
-  function getUnitsMap_(isMetric) {
-    const SEC_TO_MIN = 1 / 60;
+function getUnitsMap_(isMetric) {
+  const SEC_TO_MIN = 1 / 60;
 
-    /** Metric Conversions  */
-    const M_PER_SEC_TO_KM_TO_H = 3.6;
-    const M_PER_SEC_TO_KM_PER_MIN = 100 / 6;
-    const M_TO_KM = 0.001;
+  /** Metric Conversions  */
+  const M_PER_SEC_TO_KM_TO_H = 3.6;
+  const M_PER_SEC_TO_KM_PER_MIN = 100 / 6;
+  const M_TO_KM = 0.001;
 
-    /** US Imperial Conversions  */
-    const M_PER_SEC_TO_MILES_TO_H = 2.237;
-    const M_PER_SEC_TO_MILES_PER_MIN = 26.822;
-    const M_TO_MILES = 1 / 1609;
+  /** US Imperial Conversions  */
+  const M_PER_SEC_TO_MILES_TO_H = 2.237;
+  const M_PER_SEC_TO_MILES_PER_MIN = 26.822;
+  const M_TO_MILES = 1 / 1609;
+  const M_TO_FEET = 3.2808;
 
-    return {
-      'distance': isMetric ? M_TO_KM : M_TO_MILES,
-      'elapsed_time': SEC_TO_MIN,
-      'average_speed': isMetric ? M_PER_SEC_TO_KM_PER_MIN : M_PER_SEC_TO_MILES_PER_MIN,
-      'max_speed': isMetric ? M_PER_SEC_TO_KM_TO_H : M_PER_SEC_TO_MILES_TO_H,
-    }
+  return {
+    'distance': isMetric ? M_TO_KM : M_TO_MILES,
+    'elapsed_time': SEC_TO_MIN,
+    'average_speed': isMetric ? M_PER_SEC_TO_KM_PER_MIN : M_PER_SEC_TO_MILES_PER_MIN,
+    'max_speed': isMetric ? M_PER_SEC_TO_KM_TO_H : M_PER_SEC_TO_MILES_TO_H,
+    'total_elevation_gain' : isMetric ? 1 : M_TO_FEET,
   }
+}
+
+
+function getNumberFormatMap() {
+  return {
+    'distance': x => x.toFixed(2),
+    'elapsed_time': x => x.toFixed(0),
+    'average_speed': x => x.toFixed(2),
+    'max_speed': x => x.toFixed(1),
+    'total_elevation_gain' : x => {
+      const sign = (x > 0) ? '+' : '';
+      return `${sign}${x.toFixed(0)}`;
+    },
+  }
+}
+
+function test() {
+  const activity = {
+    'distance': 5830.3,
+    'elapsed_time': 2638,
+    'average_speed': 3.013,
+    'max_speed': 4.54,
+    'total_elevation_gain' : -21.4,
+  }
+  
+  convertAndFormatStat(activity, true)
+  console.log(activity);
+}

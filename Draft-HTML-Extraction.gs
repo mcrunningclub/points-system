@@ -36,7 +36,6 @@ function generateHtmlFromDraft_(subjectLine) {
 }
 
 
-
 function testRuntime() {
   const recipient = 'andrey.gonzalez@mail.mcgill.ca';
   const startTime = new Date().getTime();
@@ -56,7 +55,6 @@ function testRuntime() {
   // Log the runtime
   Logger.log(`Function runtime: ${runtime} ms`);
 }
-
 
 
 /**
@@ -115,9 +113,9 @@ function sendEmail_(memberInformation) {
 
 function getGmailTemplateFromDrafts(subjectLine = DRAFT_SUBJECT_LINE){
   // Verify if McRUN draft to search
-  // if (Session.getActiveUser().getEmail() != MCRUN_EMAIL) {
-  //   return Logger.log('Change Gmail Account');
-  // }
+  if (Session.getActiveUser().getEmail() != MCRUN_EMAIL) {
+    return Logger.log('Change Gmail Account');
+  }
 
   try {
     // Get the target draft, then message object
@@ -224,3 +222,4 @@ function subjectFilter_(subjectLine){
     }
   }
 }
+

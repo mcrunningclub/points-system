@@ -31,7 +31,7 @@ limitations under the License.
 // CURRENTLY IN REVIEW!
 function newSubmission() {
   formatSpecificColumns();
-  sortNameByAscending();
+  sortTimestampByAscending();
 }
 
 
@@ -107,17 +107,18 @@ function getLogAttendees_(row) {
 }
 
 function getMapUrlInRow_(row) {
-  return getLedgerData_(row, LOG_INDEX.MAP_URL) || "";
+  return getLogCell_(row, LOG_INDEX.MAP_URL) || "";
 }
 
 function getEventPointsInRow_(row) {
-  return getLedgerData_(row, LOG_INDEX.EVENT_POINTS) || 0;
+  return getLogCell_(row, LOG_INDEX.EVENT_POINTS) || 0;
 }
 
-function getLedgerData_(row, column) {
+function getLogCell_(row, column) {
   const sheet = LOG_SHEET;
   return sheet.getRange(row, column).getValue();
 }
+
 
 /**
  * Get ledger data from `LEDGER_SHEET` to send emails.
