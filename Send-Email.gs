@@ -114,7 +114,7 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
 
   // Save return status of previous function execution
   logStatus_(returnStatus, logSheet, row);
-  Logger.log(`Successfully executed 'pointsEmail' and logged messages in sheet`);
+  Logger.log(`Successfully executed 'sendStatsEmail' and logged messages in sheet`);
 }
 
 

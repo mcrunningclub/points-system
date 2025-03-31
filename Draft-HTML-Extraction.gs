@@ -1,4 +1,3 @@
-
 /**
  * User function to execute `generateHtmlFromDraft_`.
  * 
@@ -7,7 +6,7 @@
  */
 
 function saveDraftAsHtml() {
-  const subjectLine = 'Here\'s your post-run report! 🙌';
+  const subjectLine = 'mcrun-post-run-report'; // 'Here\'s your post-run report! 🙌';
   generateHtmlFromDraft_(subjectLine);
 }
 
@@ -116,9 +115,9 @@ function sendEmail_(memberInformation) {
 
 function getGmailTemplateFromDrafts(subjectLine = DRAFT_SUBJECT_LINE){
   // Verify if McRUN draft to search
-  if (Session.getActiveUser().getEmail() != MCRUN_EMAIL) {
-    return Logger.log('Change Gmail Account');
-  }
+  // if (Session.getActiveUser().getEmail() != MCRUN_EMAIL) {
+  //   return Logger.log('Change Gmail Account');
+  // }
 
   try {
     // Get the target draft, then message object
