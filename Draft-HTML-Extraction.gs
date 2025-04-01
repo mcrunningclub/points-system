@@ -1,3 +1,37 @@
+
+
+
+function testEmailBlob() {
+  const fileID = '1v8bSVxgM9rr5u1vjKB7qLEuaSu5xjgf2';
+  const mapCid = "mapBlob";
+  const inlineImage = createImageFromFile(fileID, mapCid);
+
+  const recipient = "andrey.gonzalez@mail.mcgill.ca"; // Replace with recipient email
+  const subject = "Your Inline Image";
+
+  // HTML Email Body with inline image
+  const body = '<p>Here is your headrun map ❤️</p>' +
+               `<img src="cid:${mapCid}" width="500">`;
+
+  // Send email with inline image
+  MailApp.sendEmail({
+    to: recipient,
+    subject: subject,
+    htmlBody: body,
+    inlineImages: inlineImage // Attach image inline
+  });
+
+  Logger.log("Email sent with inline image!");
+}
+
+
+function createImageFromFile(fileId, blobKey) {
+  // Fetch the image using file id and set name for reference
+  const blob = DriveApp.getFileById(fileId).getBlob().setName(blobKey);
+  return {blobKey: blob};   // Create inline image object with assigned CID
+}
+
+
 /**
  * User function to execute `generateHtmlFromDraft_`.
  * 
