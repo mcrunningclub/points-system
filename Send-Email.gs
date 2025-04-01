@@ -24,6 +24,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
   'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
+  'USE_METRIC' : LEDGER_INDEX.USE_METRIC,
   'TPOINTS': LEDGER_INDEX.TOTAL_POINTS,
   'LAST_RUN_DATE': LEDGER_INDEX.LAST_RUN_DATE,
   'TWEEKS': LEDGER_INDEX.RUN_STREAK,
@@ -78,7 +79,7 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(
  * @trigger  New headrun submission  // OLD: The 1st and 14th of every month
  *
  * @author [Charles Villegas](<charles.villegas@mail.mcgill.ca>) & ChatGPT
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 5, 2024
  * @update  Mar 31, 2025
@@ -125,23 +126,28 @@ function emailMemberStats_(recipients, activity) {
   const ledgerData = GET_LEDGER_();
   const res = [];
 
+  // Get activity stats in metric and US imperial
+  const metricStats = convertAndFormatStat(activity, true);
+  const imperialStats = convertAndFormatStat(activity, false);
+
   // Transform key labels in Strava to placeholder names in email
-  convertAndFormatStat(activity, true);
   const targetStats = filterEmailValues(activity);
 
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
     const entry = getLedgerEntry(email, ledgerData);
+    const preferredStats = entry[LEDGER_INDEX.USE_METRIC - 1] ? metricStats : imperialStats;
     const memberTotalStats = sheetToEmailLabels(entry);  // Get values for post-run email
-    res.push(emailReport_(email, { ...memberTotalStats, ...targetStats }));
+    res.push(emailReport_(email, { ...memberTotalStats, ...preferredStats }));
   }
+
   return res;
 
   /** Helper: Package run stats using ledger and `EMAIL_LEDGER_TARGETS` */
   function sheetToEmailLabels(entry) {
     return Object.fromEntries(
       Object.entries(EMAIL_LEDGER_TARGETS).map(
-        ([label, index]) => [label, entry[index - 1] || 0]) // Convert 1-based index to 0-based
+        ([label, index]) => [label, entry[index - 1]]) // Convert 1-based index to 0-based
     );
   }
 

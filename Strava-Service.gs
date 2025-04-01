@@ -40,7 +40,7 @@ function reset_() {
  * 
  * Must manually change value before running. Once allowed, flag toggles back to false.
  * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Mar 23, 2025
  */
 
@@ -164,7 +164,7 @@ function authCallback_(request) {
  * 
  * ### Info
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 7, 2024
  * @update  Mar 23, 2025
@@ -222,7 +222,7 @@ function callStravaAPI_(endpoint, query_object = {}) {
  * 
  * ### Info
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 7, 2024
  * @update  Mar 31, 2025

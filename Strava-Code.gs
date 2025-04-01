@@ -81,19 +81,42 @@ function stravaPlayground() {
 }
 
 
+/**
+ * Return Strava activity in `row`. If Strava activity not found in `LOG_SHEET`,
+ * call Strava API using `timestamp` as searching target.
+ * 
+ * 
+ * @param {integer} [row = getValidLastRow(LOG_SHEET)]  Target row.
+ *                                                      Defaults to last valid row in `LOG_SHEET`.
+ * 
+ * @return {Object}  Strava activity.
+ *
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Mar 27, 2025
+ * @update  Apr 1, 2025
+ */
+
 function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
+  // Check if Strava activity stored
+  let activity = checkForExistingStrava_(row);
+  if (activity) {
+    Logger.log(`Strava activity found in log for row ${row}!`);
+    return activity;
+  }
+  
+  // No activity stored, call Strava API instead
   // Get timestamp from row
   const timestamp = getSubmissionTimestamp(row);
 
   // Save stats to log sheet and store map to Drive.
   // Filename is timestamp. Download url added to `activity` obj
-  const activity = getStravaStats_(timestamp);
+  activity = getStravaStats_(timestamp);
   
   // If activity available, add mapUrl and save in log sheet
-  // Check if mapUrl already saved in sheet for target activity before creating new
   if (activity) {
     const filename = Utilities.formatDate(timestamp, TIMEZONE, 'EEE-d-MMM-yyyy-hh:mm');
-    activity['mapUrl'] = getMapUrlInRow_(row) ?? createStravaMap_(activity, filename);
+    activity['mapUrl'] = createStravaMap_(activity, filename);
     setStravaStats_(row, activity);
   }
 
@@ -102,14 +125,53 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
 
 
 /**
+ * Verify if Strava activity already stored in log.
+ * 
+ * Prevents redundant Strava API call.
+ * 
+ * @param {integer} [row = getValidLastRow(LOG_SHEET)]  Target row.
+ *                                                      Defaults to last valid row in `LOG_SHEET`.
+ * 
+ * @return {Object}  Previously stored Strava activity.
+ *
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Apr 1, 2025
+ * @update  Apr 1, 2025
+ */
+
+function checkForExistingStrava_(row = getValidLastRow(LOG_SHEET)) {
+  const sheet = LOG_SHEET;
+  const startCol = LOG_INDEX.STRAVA_ACTIVITY_ID;
+  const endCol = LOG_INDEX.MAP_URL;
+
+  const stravaValues = sheet.getSheetValues(row, startCol, 1, endCol)[0];
+  if(!stravaValues[0]) {
+    return null;
+  }
+
+  const activityObj = {};
+  const offset = startCol;
+  
+  for (const [id, index] of Object.entries(LOG_TARGETS)) {
+    const relativeIndex = index - offset;
+    activityObj[id] = stravaValues[relativeIndex];
+  }
+
+  return activityObj;
+}
+
+
+/**
  * Get Strava activity of most recent head run submission.
  * 
  * @param {Date} submissionTimestamp  Date representation of headrun timestamp.
- * @param {Date} maxDate  Max timestamp for map search.
+ * @param {Date} [maxDate = new Date()]  Max timestamp for map search.
+ *                                       Defaults to now.
  * 
  * @return {Object}  Strava activity with appended mapUrl
  *
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
  * @update  Mar 31, 2025
@@ -194,7 +256,7 @@ function getUnixEpochTimestamp_(timestamp) {
  * @param {object} activity  A Strava object `SummaryActivity` or `ClubActivity`.
  * @return {object}  Extracted stats from `activity`.
  * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Mar 22, 2025
  * @update  Mar 27, 2025
  */
@@ -216,7 +278,7 @@ function extractRunStats_(activity, statsMap, offset = 0) {
  * @param {string} polyline  Encoded Google Map polyline string.
  * @param {string} name  Name for map.
  * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Mar 27, 2025
  * @update  Mar 31, 2025
  */
@@ -269,7 +331,7 @@ function postToMakeWebhook_(postUrl, mapName) {
  * @param {integer} timestamp  Name to save file as.
  * 
  * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Dec 1, 2024
  * @update  Mar 27, 2025

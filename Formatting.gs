@@ -18,7 +18,7 @@ limitations under the License.
 /** 
  * Sorts log sheet by event timestamp ascending.
  * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Nov 28, 2023
  * @update  Mar 31, 2025
  */
@@ -35,7 +35,7 @@ function sortTimestampByAscending() {
 /**
  * Format specific columns in `Head Run Attendance`.
  * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Oct 30, 2023
  * @update  Mar 31, 2025
  */
@@ -78,7 +78,7 @@ function formatSpecificColumns() {
  * @param {string} inputString  String to format.
  * @return {string}  String in title case.
  * 
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Oct 30, 2023
  * @update  Oct 30, 2023
  */
@@ -97,7 +97,7 @@ function toTitleCase(inputString) {
  * @param {Boolean} isMetric  True if metric system is used, else imperial system.
  * @return {Object}  Converted Strava activity.
  *
- * @author [Andrey S Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 30, 2025
  * @update  Mar 31, 2025
