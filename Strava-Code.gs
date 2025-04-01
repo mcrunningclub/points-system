@@ -108,10 +108,12 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
   // No activity stored, call Strava API instead
   // Get timestamp from row
   const timestamp = getSubmissionTimestamp(row);
+  const offset = 1000 * 60 * 60 * 3;    // 3 hours in seconds
+  const limit = Math.floor((timestamp.getTime() + offset) / 1000);
 
   // Save stats to log sheet and store map to Drive.
   // Filename is timestamp. Download url added to `activity` obj
-  activity = getStravaStats_(timestamp);
+  activity = getStravaStats_(timestamp, limit);
   
   // If activity available, add mapUrl and save in log sheet
   if (activity) {
@@ -121,6 +123,15 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
   }
 
   return activity;
+}
+
+
+function getAll() {
+  const startRow = 18;
+  const endRow = 18 //getValidLastRow(LOG_SHEET);
+  for(let row = startRow; row <= endRow; row++) {
+    findAndStoreStravaActivity(row);
+  }
 }
 
 
@@ -146,12 +157,13 @@ function checkForExistingStrava_(row = getValidLastRow(LOG_SHEET)) {
   const endCol = LOG_INDEX.MAP_URL;
 
   const stravaValues = sheet.getSheetValues(row, startCol, 1, endCol)[0];
+
   if(!stravaValues[0]) {
     return null;
   }
 
   const activityObj = {};
-  const offset = startCol;
+  const offset = LOG_INDEX.STRAVA_ACTIVITY_ID;
   
   for (const [id, index] of Object.entries(LOG_TARGETS)) {
     const relativeIndex = index - offset;
@@ -166,27 +178,26 @@ function checkForExistingStrava_(row = getValidLastRow(LOG_SHEET)) {
  * Get Strava activity of most recent head run submission.
  * 
  * @param {Date} submissionTimestamp  Date representation of headrun timestamp.
- * @param {Date} [maxDate = new Date()]  Max timestamp for map search.
- *                                       Defaults to now.
+ * @param {integer} toTimestamp  Max timestamp for map search in seconds.
  * 
  * @return {Object}  Strava activity with appended mapUrl
  *
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  Mar 31, 2025
+ * @update  April 1, 2025
  */
 
-function getStravaStats_(submissionTimestamp, maxDate = new Date()) {
-  // Get Unix Epoch value of timestamps to define search range
-  const toTimestamp = getUnixEpochTimestamp_(maxDate);
-  const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp);
+function getStravaStats_(submissionTimestamp, toTimestamp) {
+  // Get Unix Epoch value of timestamp to define search range
+  const gracePeriod = 60 * 60 * 1.5   // In case the headrunner posted late
+  const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp) - gracePeriod;
 
   // Get activity with time constraints
   const activity = getStravaActivity_(fromTimestamp, toTimestamp);
 
   if (!activity) {
-    return null && Logger.log(`No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`);
+    Logger.log(`No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`);
   }
 
   return activity;
@@ -227,7 +238,7 @@ function setStravaStats_(row, activity) {
   rangeToSet.setValues([extracted]);
 
   // Log success mesage
-  Logger.log('Successfully imported Strava activity to Log Sheet!');
+  Logger.log(`Successfully imported Strava activity to row ${row} in Log Sheet!`);
 }
 
 
@@ -317,7 +328,7 @@ function postToMakeWebhook_(postUrl, mapName) {
   };
 
   const response = UrlFetchApp.fetch(webhookUrl, options);
-  Logger.log("Response: " + response.getContentText());
+  Logger.log("Make Webhook Response: " + response.getContentText());
   return response;
 }
 

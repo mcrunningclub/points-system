@@ -1,6 +1,3 @@
-
-
-
 function testEmailBlob() {
   const fileID = '1v8bSVxgM9rr5u1vjKB7qLEuaSu5xjgf2';
   const mapCid = "mapBlob";
