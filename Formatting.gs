@@ -91,42 +91,50 @@ function toTitleCase(inputString) {
 
 
 /**
- * Change the units from Strava activity to user-friendly units.
+ * Change the units in Strava activity to user-friendly values.
  * 
  * @param {Object} activity  Strava activity.
- * @param {Boolean} isMetric  True if metric system is used, else imperial system.
- * @return {Object}  Converted Strava activity.
+ * @return {Object}  Converted Strava activity in metric and US imperial values.
  *
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 30, 2025
- * @update  Mar 31, 2025
+ * @update  Apr 1, 2025
  */
 
-function convertAndFormatStat(activity, isMetric) {
-  const units = getUnitsMap_(isMetric);
-  const formats = getNumberFormatMap(); 
+function convertAndFormatStats(activity) {
+  const unitMap = getUnitsMap_();
+  const formatMap = getNumberFormatMap();
+
+  // Duplicate properties of activity for both metric and imperial
+  const converted = {metric : {...activity}, imperial : {...activity}};
+  const systems = Object.keys(converted);
 
   Object.entries(activity).forEach(([key, value]) => {
-    if (!(key in units)) return;
-    const convertedVal = convertUnit_(key, value);
-    activity[key] = formatNumber(key, convertedVal);
+    if (!(key in unitMap)) return;
+    const units = convertAndFormat(key, value, unitMap, formatMap);
+    systems.forEach(sys => converted[sys][key] = units[sys]);
   });
 
-  function convertUnit_(type, value) {
-    if (type === 'average_speed') {
-      return units[type] / value;
-    }
-    return value * units[type];
-  };
+  return converted;
 
-  function formatNumber(key, value) {
-    return formats[key](value);
+  /** Helper function to convert and format values according to their type mapping */
+  function convertAndFormat(type, value, units, formats) {
+    const factor = units[type];
+    const format = formats[type];
+
+    const operation = type === 'average_speed' ? (a, b) => a / b : (a, b) => a * b;
+
+    return {
+      metric: format(operation(factor.metric, value)),
+      imperial: format(operation(factor.imperial, value)),
+    };
   }
 }
 
-/** Returns the stat to unit conversion mapping in metric or imperial*/
-function getUnitsMap_(isMetric) {
+
+/** Returns the stat to unit conversion mapping in metric and imperial*/
+function getUnitsMap_() {
   const SEC_TO_MIN = 1 / 60;
 
   /** Metric Conversions  */
@@ -141,11 +149,15 @@ function getUnitsMap_(isMetric) {
   const M_TO_FEET = 3.2808;
 
   return {
-    'distance': isMetric ? M_TO_KM : M_TO_MILES,
-    'elapsed_time': SEC_TO_MIN,
-    'average_speed': isMetric ? M_PER_SEC_TO_KM_PER_MIN : M_PER_SEC_TO_MILES_PER_MIN,
-    'max_speed': isMetric ? M_PER_SEC_TO_KM_TO_H : M_PER_SEC_TO_MILES_TO_H,
-    'total_elevation_gain' : isMetric ? 1 : M_TO_FEET,
+    'distance': pack(M_TO_KM, M_TO_MILES),
+    'elapsed_time': pack(SEC_TO_MIN, SEC_TO_MIN),
+    'average_speed': pack(M_PER_SEC_TO_KM_PER_MIN, M_PER_SEC_TO_MILES_PER_MIN),
+    'max_speed': pack(M_PER_SEC_TO_KM_TO_H, M_PER_SEC_TO_MILES_TO_H),
+    'total_elevation_gain' : pack(1, M_TO_FEET),
+  }
+
+  function pack(aMetric, aImperial) {
+    return {metric : aMetric, imperial : aImperial};
   }
 }
 
@@ -170,8 +182,10 @@ function test() {
     'average_speed': 3.013,
     'max_speed': 4.54,
     'total_elevation_gain' : -21.4,
+    'points' : 100,
   }
   
-  convertAndFormatStat(activity, true)
+  const ret = convertAndFormatStats(activity);
   console.log(activity);
+  console.log(ret);
 }

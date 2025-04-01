@@ -127,17 +127,18 @@ function emailMemberStats_(recipients, activity) {
   const res = [];
 
   // Get activity stats in metric and US imperial
-  const metricStats = convertAndFormatStat(activity, true);
-  const imperialStats = convertAndFormatStat(activity, false);
+  const allStats = convertAndFormatStats(activity);
 
   // Transform key labels in Strava to placeholder names in email
-  const targetStats = filterEmailValues(activity);
+  const {metric : metricStats, imperial : imperialStats} = filterEmailValues(allStats);
 
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
     const entry = getLedgerEntry(email, ledgerData);
     const preferredStats = entry[LEDGER_INDEX.USE_METRIC - 1] ? metricStats : imperialStats;
     const memberTotalStats = sheetToEmailLabels(entry);  // Get values for post-run email
+
+    // Email report and log response
     res.push(emailReport_(email, { ...memberTotalStats, ...preferredStats }));
   }
 
@@ -152,6 +153,17 @@ function emailMemberStats_(recipients, activity) {
   }
 
   function filterEmailValues(data) {
+    const ret = {metric : {}, imperial : {}};
+    const systems = Object.keys(ret);
+
+    for (const [objKey, emailKey] of Object.entries(EMAIL_PLACEHOLDER_LABELS)) {
+      systems.forEach(sys => {
+        ret[sys][emailKey] = data[sys][objKey] || "";
+      });
+    }
+
+    return ret;
+
     return Object.entries(EMAIL_PLACEHOLDER_LABELS).reduce((acc, [objKey, emailKey]) => {
       acc[emailKey] = data[objKey] || "";
       return acc;
@@ -177,7 +189,8 @@ function emailReport_(email, memberStats) {
 
   MailApp.sendEmail({
     //to: email
-    to: 'andreysebastian10.g@gmail.com',
+    //to: 'andreysebastian10.g@gmail.com',
+    to : 'andrey.gonzalez@mail.mcgill.ca',
     subject: emailTemplate.subject,
     htmlBody: msgObj.html,
     name: 'McGill Students Running Club'
