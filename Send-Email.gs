@@ -108,7 +108,7 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
       acc.push(email);
       return acc;
     }, []
-    );
+  );
 
   const returnStatus = emailMemberStats_(recipientArr, activityStats);
 
@@ -189,8 +189,8 @@ function emailReport_(email, memberStats) {
 
   MailApp.sendEmail({
     //to: email
-    //to: 'andreysebastian10.g@gmail.com',
-    to : 'andrey.gonzalez@mail.mcgill.ca',
+    to: 'andreysebastian10.g@gmail.com',
+    //to : 'andrey.gonzalez@mail.mcgill.ca',
     subject: emailTemplate.subject,
     htmlBody: msgObj.html,
     name: 'McGill Students Running Club'

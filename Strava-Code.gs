@@ -98,6 +98,10 @@ function stravaPlayground() {
  */
 
 function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
+  if (getCurrentUserEmail_() !== MCRUN_EMAIL) {
+    throw Error ("Please switch to the McRUN account before continuing");
+  }
+
   // Check if Strava activity stored
   let activity = checkForExistingStrava_(row);
   if (activity) {
@@ -126,9 +130,9 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
 }
 
 
-function getAll() {
-  const startRow = 18;
-  const endRow = 18 //getValidLastRow(LOG_SHEET);
+function getAllActivities() {
+  const startRow = 88;
+  const endRow = 88; //getValidLastRow(LOG_SHEET);
   for(let row = startRow; row <= endRow; row++) {
     findAndStoreStravaActivity(row);
   }
@@ -197,7 +201,7 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
   const activity = getStravaActivity_(fromTimestamp, toTimestamp);
 
   if (!activity) {
-    Logger.log(`No Strava activity has been found for the run that occured on ${new Date(fromTimestamp)}`);
+    Logger.log(`No Strava activity has been found for the run that occured on ${submissionTimestamp}`);
   }
 
   return activity;
@@ -305,12 +309,13 @@ function buildPostUrl_(polyline, imgSize = "580x420") {
   const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
 
   const googleCloudMapId = 'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
+  const pathColor = '0x881C17';
 
   const queryObj = {
     size: imgSize,
     map_id: googleCloudMapId,
     key: apiKey,
-    path: 'enc:' + polyline,
+    path: `color:${pathColor}` + '|' + `enc:${polyline}`,
   }
 
   return MAPS_BASE_URL + queryObjToString_(queryObj);
