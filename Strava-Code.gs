@@ -112,7 +112,7 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
   // No activity stored, call Strava API instead
   // Get timestamp from row
   const timestamp = getSubmissionTimestamp(row);
-  const offset = 1000 * 60 * 60 * 3;    // 3 hours in seconds
+  const offset = 1000 * 60 * 60 * 2;    // 2 hours in seconds
   const limit = Math.floor((timestamp.getTime() + offset) / 1000);
 
   // Save stats to log sheet and store map to Drive.
@@ -194,7 +194,7 @@ function checkForExistingStrava_(row = getValidLastRow(LOG_SHEET)) {
 
 function getStravaStats_(submissionTimestamp, toTimestamp) {
   // Get Unix Epoch value of timestamp to define search range
-  const gracePeriod = 60 * 60 * 1.5   // In case the headrunner posted late
+  const gracePeriod = 60 * 60 * 2   // In case the headrunner posted late
   const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp) - gracePeriod;
 
   // Get activity with time constraints
@@ -295,7 +295,7 @@ function extractRunStats_(activity, statsMap, offset = 0) {
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Mar 27, 2025
- * @update  Mar 31, 2025
+ * @update  Apr 2, 2025
  */
 
 function saveMapForRun_(polyline, name) {
@@ -309,13 +309,14 @@ function buildPostUrl_(polyline, imgSize = "580x420") {
   const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
 
   const googleCloudMapId = 'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
-  const pathColor = '0x881C17';
+  const pathColor = '0xEB4E3D';
 
   const queryObj = {
     size: imgSize,
     map_id: googleCloudMapId,
     key: apiKey,
-    path: `color:${pathColor}` + '|' + `enc:${polyline}`,
+    //path: `color:${pathColor}` + '|' + `enc:${polyline}`,
+    path: `enc:${polyline}`,
   }
 
   return MAPS_BASE_URL + queryObjToString_(queryObj);

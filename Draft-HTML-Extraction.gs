@@ -1,7 +1,38 @@
+/**
+ * Extracts all literal tags from HTML file using regex.
+ * 
+ * Used to debug HTML file.
+ * 
+ * @author  [Andrey Gonzalez] (<andrey.gonzalez@mail.mcgill.ca>)
+ * @date Apr 2, 2025
+ * @update Apr 3, 2025
+ */
+
+function extractTagsFromProjectFile() {
+  // Get the content of email.html from the script project
+  const filename = 'Points Email V2';
+  var htmlContent = HtmlService.createHtmlOutputFromFile(filename).getContent();
+
+  // Decode &lt; and &gt; back to < and >
+  var fileContent = htmlContent.replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+
+  // Extract all occurrences of <?= TAG ?>
+  var matches = fileContent.match(/<\?=\s*([A-Z_]+)\s*\?>/g);
+
+  // Remove `<?=` and `?>` to extract just the tag names
+  var tags = matches ? matches.map(match => match.replace(/<\?=\s*|\s*\?>/g, '')) : [];
+
+  // Get unique tags
+  const unique = tags.filter((item, i, ar) => ar.indexOf(item) === i);
+
+  Logger.log("Extracted Tags: " + JSON.stringify(unique));
+}
+
+
 function testEmailBlob() {
   const fileID = '1v8bSVxgM9rr5u1vjKB7qLEuaSu5xjgf2';
   const mapCid = "mapBlob";
-  const inlineImage = createImageFromFile(fileID, mapCid);
+  const inlineImage = createImageFromFile_(fileID, mapCid);
 
   const recipient = "andrey.gonzalez@mail.mcgill.ca"; // Replace with recipient email
   const subject = "Your Inline Image";
@@ -22,10 +53,10 @@ function testEmailBlob() {
 }
 
 
-function createImageFromFile(fileId, blobKey) {
+function createImageFromFile_(fileId, blobKey) {
   // Fetch the image using file id and set name for reference
   const blob = DriveApp.getFileById(fileId).getBlob().setName(blobKey);
-  return {blobKey: blob};   // Create inline image object with assigned CID
+  return { blobKey: blob };   // Create inline image object with assigned CID
 }
 
 
@@ -37,7 +68,7 @@ function createImageFromFile(fileId, blobKey) {
  */
 
 function saveDraftAsHtml() {
-  const subjectLine = 'mcrun-post-run-report'; // 'Here\'s your post-run report! 🙌';
+  const subjectLine = 'Here\'s your post-run report! 🙌';
   generateHtmlFromDraft_(subjectLine);
 }
 
@@ -56,7 +87,7 @@ function generateHtmlFromDraft_(subjectLine) {
   const baseName = subjectLine.replace(/ /g, '-').toLowerCase();
 
   // Create filename for html file
-  const fileName = `${baseName}-html-${datetime}`;
+  const fileName = `${baseName}-${datetime}.html`;
 
   // Find template in drafts and get email objects
   const emailTemplate = getGmailTemplateFromDrafts(subjectLine);
@@ -64,6 +95,7 @@ function generateHtmlFromDraft_(subjectLine) {
 
   // Save html file in drive
   DriveApp.createFile(fileName, msgObj.html);
+  Logger.log(`Created HTML file '${fileName}'`);
 }
 
 
