@@ -220,7 +220,7 @@ function createStravaMap_(activity, name) {
     file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
 
     // Return download url from file
-    return file.getDownloadUrl();
+    return file.getUrl();
   }
   
   return '';

@@ -14,7 +14,9 @@ TEMPLATE VERSION APR 2025
   <meta name="x-apple-disable-message-reformatting">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="format-detection" content="telephone=no">
-  <title>Here's your post-run report <?= FIRST_NAME ?>! 🙌</title>
+  <title>Here's your post-run report
+    <?= FIRST_NAME ?>! 🙌
+  </title>
   <!--[if (mso 16)]>
     <style type="text/css">
     a {text-decoration: none;}
@@ -896,7 +898,9 @@ TEMPLATE VERSION APR 2025
                                   style="padding:0;Margin:0;padding-top:15px;padding-bottom:15px">
                                   <h1 class="es-override-size es-text-mobile-size-36"
                                     style="Margin:0;font-family:arial, 'helvetica neue', helvetica, sans-serif;mso-line-height-rule:exactly;letter-spacing:0;font-size:46px;font-style:normal;font-weight:bold;line-height:55.2px;color:#333333">
-                                    Your latest stats, <?= FIRST_NAME ?>!</h1>
+                                    Your latest stats,
+                                    <?= FIRST_NAME ?>!
+                                  </h1>
                                 </td>
                               </tr>
                               <tr>
@@ -1071,7 +1075,8 @@ TEMPLATE VERSION APR 2025
                                   style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px">
                                   <p class="es-text-mobile-size-28"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:42px;letter-spacing:0;color:#333333;font-size:28px">
-                                    <strong><?= TPOINTS ?> points</strong></p>
+                                    <strong><?= TPOINTS ?> points</strong>
+                                  </p>
                                 </td>
                               </tr>
                             </table>
@@ -1115,7 +1120,8 @@ TEMPLATE VERSION APR 2025
                                   style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px">
                                   <p class="es-text-mobile-size-28"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:42px;letter-spacing:0;color:#333333;font-size:28px">
-                                    <strong><?= TWEEKS ?> <?= TWEEKS === 1 ? "week" : "weeks" ?></strong></p>
+                                    <strong><?= TWEEKS ?> <?= TWEEKS === 1 ? "week" : "weeks" ?></strong>
+                                  </p>
                                 </td>
                               </tr>
                             </table>
@@ -1158,7 +1164,8 @@ TEMPLATE VERSION APR 2025
                                   style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px">
                                   <p class="es-text-mobile-size-28"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:42px;letter-spacing:0;color:#333333;font-size:28px">
-                                    <strong><?= TRUNS ?> <?= TRUNS === 1 ? "week" : "weeks" ?></strong></p>
+                                    <strong><?= TRUNS ?> <?= TRUNS === 1 ? "week" : "weeks" ?></strong>
+                                  </p>
                                 </td>
                               </tr>
                             </table>
@@ -1291,7 +1298,8 @@ TEMPLATE VERSION APR 2025
                                         style="padding:0;Margin:0;padding-top:30px">
                                         <p class="es-m-txt-c es-text-mobile-size-33 es-override-size"
                                           style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:52.5px;letter-spacing:0;color:#ffffff;font-size:35px">
-                                          <strong><?= DISTANCE ?> <?= USE_METRIC ? "km" : "miles" ?></strong></p>
+                                          <strong><?= DISTANCE ?> <?= USE_METRIC ? "km" : "miles" ?></strong>
+                                        </p>
                                       </td>
                                     </tr>
                                     <tr>
@@ -1364,7 +1372,8 @@ TEMPLATE VERSION APR 2025
                                         style="padding:0;Margin:0;padding-top:30px">
                                         <p class="es-m-txt-c es-text-mobile-size-33 es-override-size"
                                           style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:52.5px;letter-spacing:0;color:#ffffff;font-size:35px">
-                                          <strong><?= DURATION ?> min</strong></p>
+                                          <strong><?= DURATION ?> min</strong>
+                                        </p>
                                       </td>
                                     </tr>
                                     <tr>
@@ -1511,7 +1520,8 @@ TEMPLATE VERSION APR 2025
                                         style="padding:0;Margin:0;padding-top:30px">
                                         <p class="es-m-txt-c es-override-size es-text-mobile-size-33"
                                           style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:52.5px;letter-spacing:0;color:#ffffff;font-size:35px">
-                                          <strong><?= ELEVATION ?> <?= USE_METRIC ? "m" : "feet" ?></strong></p>
+                                          <strong><?= ELEVATION ?> <?= USE_METRIC ? "m" : "feet" ?></strong>
+                                        </p>
                                       </td>
                                     </tr>
                                     <tr>
@@ -1802,9 +1812,10 @@ TEMPLATE VERSION APR 2025
                               </tr>
                               <tr>
                                 <td align="center" class="es-m-p0r es-m-p0l"
-                                  style="padding:0;Margin:0;padding-left:30px;padding-right:30px;font-size:0px"><a
-                                    target="_blank" href="https://www.strava.com/activities/<?= ACTIVITY_ID ?>"
-                                    style="mso-line-height-rule:exactly;text-decoration:underline;color:#5C68E2;font-size:14px"><img alt="Head Run Itinerary" width="500" src="<?= MAP_URL ?>" title="Head Run Itinerary" class="adapt-img" style="display:block;font-size:14px;border:0;outline:none;text-decoration:none;border-radius:5px"></a>
+                                  style="padding:0;Margin:0;padding-left:30px;padding-right:30px;font-size:0px">
+                                  <a target="_blank" href="https://www.strava.com/activities/<?= ACTIVITY_ID ?>"
+                                    style="mso-line-height-rule:exactly;text-decoration:underline;color:#5C68E2;font-size:14px"><img alt="Head Run Itinerary" width="500" src="cid:<?= MAP_CID ?>" title="Head Run Itinerary" class="adapt-img" style="display:block;font-size:14px;border:0;outline:none;text-decoration:none;border-radius:5px">
+                                  </a>
                                 </td>
                               </tr>
                             </table>
@@ -1903,7 +1914,8 @@ TEMPLATE VERSION APR 2025
                                 <td align="center" class="es-text-2584 es-m-p10l es-m-p10r" style="padding:0;Margin:0">
                                   <p class="es-text-mobile-size-26 es-override-size"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:42px;letter-spacing:0;color:#333333;font-size:28px">
-                                    <strong>Did you enjoy your run?</strong></p>
+                                    <strong>Did you enjoy your run?</strong>
+                                  </p>
                                 </td>
                               </tr>
                             </table>
@@ -2162,13 +2174,16 @@ TEMPLATE VERSION APR 2025
                                   style="padding:0;Margin:0;padding-bottom:5px">
                                   <p class="es-override-size es-text-mobile-size-14 es-m-txt-c"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:28px;letter-spacing:0;color:#ffffff;font-size:14px;text-align:center">
-                                    © <?= new Date().getFullYear() ?> McGill Students Running Club</p>
+                                    ©
+                                    <?= new Date().getFullYear() ?> McGill Students Running Club
+                                  </p>
                                   <p class="es-override-size es-text-mobile-size-14 es-m-txt-c"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:28px;letter-spacing:0;color:#ffffff;font-size:14px;text-align:center">
                                     All Rights Reserved.</p>
                                   <p class="es-override-size es-text-mobile-size-14 es-m-txt-c"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:28px;letter-spacing:0;color:#ffffff;font-size:14px;text-align:center">
-                                    <br></p>
+                                    <br>
+                                  </p>
                                   <p class="es-override-size es-text-mobile-size-14 es-m-txt-c"
                                     style="Margin:0;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:14px;letter-spacing:0;color:#ffffff;font-size:14px;text-align:center">
                                     Student Group of the Students' Society of McGill University (SSMU)</p>

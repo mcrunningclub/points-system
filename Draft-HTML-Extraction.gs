@@ -30,9 +30,9 @@ function extractTagsFromProjectFile() {
 
 
 function testEmailBlob() {
-  const fileID = '1v8bSVxgM9rr5u1vjKB7qLEuaSu5xjgf2';
+  const fileUrl = "https://drive.google.com/file/d/1hpjPIgtPGs-bcgX3zbS2m-kfkOeweWvJ/view";
   const mapCid = "mapBlob";
-  const inlineImage = createImageFromFile_(fileID, mapCid);
+  const inlineImage = createInlineImage_(fileUrl, mapCid);
 
   const recipient = "andrey.gonzalez@mail.mcgill.ca"; // Replace with recipient email
   const subject = "Your Inline Image";
@@ -46,17 +46,23 @@ function testEmailBlob() {
     to: recipient,
     subject: subject,
     htmlBody: body,
-    inlineImages: inlineImage // Attach image inline
+    inlineImages: {mapCid : inlineImage}, // Attach image inline
   });
 
   Logger.log("Email sent with inline image!");
 }
 
 
-function createImageFromFile_(fileId, blobKey) {
+function createInlineImage_(fileUrl, blobKey) {
+  // Extract file id from url. 
+  // For cases like .../file/d/FILE_ID/... and ...&id=FILE_ID...
+  const match = fileUrl.match(/(?:\/file\/d\/|[?&]id=)([\w-]+)/);
+  const fileId = match[1];
+
   // Fetch the image using file id and set name for reference
-  const blob = DriveApp.getFileById(fileId).getBlob().setName(blobKey);
-  return { blobKey: blob };   // Create inline image object with assigned CID
+  // Create inline image object with assigned CID
+  const mapFile = DriveApp.getFileById(fileId);
+  return mapFile.getBlob().setName(blobKey);
 }
 
 

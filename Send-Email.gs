@@ -173,7 +173,6 @@ function emailMemberStats_(recipients, activity) {
 }
 
 
-
 function emailReport_(email, memberStats) {
   // Create template to populate
   const template = HtmlService.createTemplateFromFile('Points Email V2');
@@ -196,24 +195,35 @@ function emailReport_(email, memberStats) {
   template.MSPEED = memberStats['MSPEED'];
   template.POINTS = memberStats['POINTS'];
   template.ACTIVITY_ID = memberStats['ACTIVITY_ID'];
-  template.MAP_URL = memberStats['MAP_URL'];
+
+  // Add run map as blob instead of url
+  const mapCid = "mapBlob";
+  const mapBlob = createInlineImage_(memberStats['MAP_URL'], mapCid);
+  template.MAP_CID = mapCid;
 
   // Evaluate template and log message
   const filledTemplate = template.evaluate();
   Logger.log(`Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
 
+  const inlineImages = {
+    mapCid : mapBlob
+  };
+
   MailApp.sendEmail(
     message = {
-      to: 'andrey.gonzalez@mail.mcgill.ca',
+      //to: 'andrey.gonzalez@mail.mcgill.ca',
+      to: 'andreysebastian10.g@gmail.com',
       //to : email,
       name: EMAIL_SENDER_NAME,
       subject: POINTS_EMAIL_SUBJECT,
-      htmlBody: filledTemplate.getContent()
+      replyTo : MCRUN_EMAIL,
+      htmlBody: filledTemplate.getContent(),
+      inlineImages: inlineImages,
     }
   );
 
   // Log confirmation for the sent email with member stats
-  const log = `Stats email sent to ${email}.`;
+  const log = `Stats email sent to ${email}`;
   Logger.log(log);
   return log;
 }
