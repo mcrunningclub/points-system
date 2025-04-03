@@ -19,7 +19,8 @@ limitations under the License.
 */
 
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
-const POINTS_EMAIL_NAME = 'Stats Email Template';
+const POINTS_EMAIL_SUBJECT = "Here's your post-run report! 🙌";
+const EMAIL_SENDER_NAME = "McGill Students Running Club";
 const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
@@ -82,7 +83,7 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(
  * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 5, 2024
- * @update  Apr 2, 2025
+ * @update  Apr 3, 2025
  */
 
 function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
@@ -177,6 +178,10 @@ function emailReport_(email, memberStats) {
   // Create template to populate
   const template = HtmlService.createTemplateFromFile('Points Email V2');
   
+  // Get member's system preference to format email
+  const useMetric = memberStats['USE_METRIC'];
+  template.USE_METRIC = memberStats['USE_METRIC'];
+
   // Populate member's general stats
   template.FIRST_NAME = memberStats['FIRST_NAME'];
   template.TPOINTS = memberStats['TPOINTS'];
@@ -193,29 +198,16 @@ function emailReport_(email, memberStats) {
   template.ACTIVITY_ID = memberStats['ACTIVITY_ID'];
   template.MAP_URL = memberStats['MAP_URL'];
 
-
-  // Get member's system preference to format email
-  const useMetric = memberStats['USE_METRIC'];
-  Logger.log(`Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
-  template.USE_METRIC = memberStats['USE_METRIC'];
-  
-  // Append general data to activity stats (e.g. current year)
-  // Format nouns if plural or singular (i.e. streak, run count) 
-  //template.WEEK_UNIT = `${memberStats['TWEEKS'] === 1 ? 'week' : 'weeks'}`;
-  //template.DISTANCE_UNIT = `${useMetric ? 'km' : 'miles' }`;
-  //template.HEIGHT_UNIT = `${useMetric ? 'm' : 'feet'}`;
-  //template.RUNS_UNIT = `${memberStats['TRUNS'] === 1 ? 'run' : 'runs'}`;
-  //template.SPEED_UNIT = `${useMetric ? 'km / h' : 'mph'}`;
-  //template.THIS_YEAR = `${new Date().getFullYear()}`;
-
+  // Evaluate template and log message
   const filledTemplate = template.evaluate();
+  Logger.log(`Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
 
   MailApp.sendEmail(
     message = {
       to: 'andrey.gonzalez@mail.mcgill.ca',
       //to : email,
-      name: "McGill Students Running Club",
-      subject: "Post-run Report!",
+      name: EMAIL_SENDER_NAME,
+      subject: POINTS_EMAIL_SUBJECT,
       htmlBody: filledTemplate.getContent()
     }
   );
@@ -261,7 +253,7 @@ function emailReportOld_(email, memberStats) {
     //to : 'andrey.gonzalez@mail.mcgill.ca',
     subject: emailTemplate.subject,
     htmlBody: msgObj.html,
-    name: 'McGill Students Running Club'
+    name: EMAIL_SENDER_NAME,
   });
 
   // Log confirmation for the sent email with member stats
@@ -317,7 +309,7 @@ function sendReminderEmail_(name, email) {
     MailApp.sendEmail(
       message = {
         to: email,
-        name: "McGill Students Running Club",
+        name: EMAIL_SENDER_NAME,
         subject: "We've missed you!",
         htmlBody: filledTemplate.getContent()
       }
@@ -346,7 +338,7 @@ function mailMemberPointsV1_(trimmedName, email, points) {
   }
 
   // Prepare the HTML body from the template
-  const template = HtmlService.createTemplateFromFile(POINTS_EMAIL_NAME);
+  const template = HtmlService.createTemplateFromFile('Points Email V1');
   template.FIRST_NAME = firstName;
   template.MEMBER_POINTS = points;
 
@@ -359,7 +351,8 @@ function mailMemberPointsV1_(trimmedName, email, points) {
   MailApp.sendEmail({
     //to: email,
     subject: subject,
-    htmlBody: pointsEmailHTML
+    htmlBody: pointsEmailHTML,
+    name: EMAIL_SENDER_NAME,
   });
 
   // Log confirmation for the sent email with values for each variable

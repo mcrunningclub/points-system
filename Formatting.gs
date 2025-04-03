@@ -135,23 +135,21 @@ function convertAndFormatStats_(activity) {
 
 /** Returns the stat to unit conversion mapping in metric and imperial*/
 function getUnitsMap_() {
-  const SEC_TO_MIN = 1 / 60;
-
   /** Metric Conversions  */
   const M_PER_SEC_TO_KM_PER_H = 3.6;
-  const M_PER_SEC_TO_KM_PER_SEC = 1000;
+  const M_PER_SEC_TO_SEC_PER_KM = 1000;   // e.g. 1000 sec/km ÷ 4 m/s = 250 sec/km
   const M_TO_KM = 0.001;
 
   /** US Imperial Conversions  */
   const M_PER_SEC_TO_MILES_PER_H = 2.237;
-  const M_PER_SEC_TO_MILES_PER_SEC = 1609;
+  const M_PER_SEC_TO_SEC_PER_MILES = 1609;   // e.g. 1609 sec/mile ÷ 4 m/s = 402 sec/mile
   const M_TO_MILES = 1 / 1609;
   const M_TO_FEET = 3.2808;
 
   return {
     'distance': pack(M_TO_KM, M_TO_MILES),
-    'elapsed_time': pack(1, 1),   // LEAVE IN SEC FOR LATER 'mm:ss' CALCULATION
-    'average_speed': pack(M_PER_SEC_TO_KM_PER_SEC, M_PER_SEC_TO_MILES_PER_SEC),
+    'elapsed_time': pack(1, 1),   // Leave as seconds to format as 'mm:ss' later
+    'average_speed': pack(M_PER_SEC_TO_SEC_PER_KM, M_PER_SEC_TO_SEC_PER_MILES),  // Likewise
     'max_speed': pack(M_PER_SEC_TO_KM_PER_H, M_PER_SEC_TO_MILES_PER_H),
     'total_elevation_gain' : pack(1, M_TO_FEET),
   }
@@ -163,14 +161,8 @@ function getUnitsMap_() {
 
 
 function getNumberFormatMap_() {
-  const toMinuteSeconds = (t) => {
-    const totalMin = Math.floor(t / 60);
-    const totalSec = `${Math.floor(t % 60)}`;
-    return totalMin + ':' + totalSec.padStart(2, "0");   // Get time as mm:ss
-  }
-
   return {
-    'distance': x => x.toFixed(2),
+    'distance': x => toFixedTruncate(x, 2),
     'elapsed_time': x => toMinuteSeconds(x),
     'average_speed': x => toMinuteSeconds(x),
     'max_speed': x => x.toFixed(1),
@@ -179,15 +171,29 @@ function getNumberFormatMap_() {
       return `${sign}${x.toFixed(0)}`;
     },
   }
+
+  function toFixedTruncate(num, digits) {
+    const factor = Math.pow(10, digits);
+    const truncated = Math.floor(num * factor) / factor;
+
+    return truncated.toFixed(digits);  // Convert to string and pad with zeros
+  }
+
+  function toMinuteSeconds(t) {
+    const totalMin = Math.floor(t / 60);
+    const totalSec = `${Math.round(t % 60)}`;
+
+    return totalMin + ':' + totalSec.padStart(2, "0");   // Get time as mm:ss
+  }
 }
 
 function testActivityFormatting() {
   const activity = {
-    'distance': 5830.3,
-    'elapsed_time': 2641,
-    'average_speed': 3.013,
-    'max_speed': 4.54,
-    'total_elevation_gain' : -21.4,
+    'distance': 5998.9,
+    'elapsed_time': 2766,
+    'average_speed': 3.616,
+    'max_speed': 4.84,
+    'total_elevation_gain' : 24.7,
     'points' : 100,
   }
   
