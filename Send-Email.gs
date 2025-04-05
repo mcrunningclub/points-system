@@ -25,7 +25,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
   'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
-  'USE_METRIC' : LEDGER_INDEX.USE_METRIC,
+  'USE_METRIC': LEDGER_INDEX.USE_METRIC,
   'TPOINTS': LEDGER_INDEX.TOTAL_POINTS,
   'LAST_RUN_DATE': LEDGER_INDEX.LAST_RUN_DATE,
   'TWEEKS': LEDGER_INDEX.RUN_STREAK,
@@ -43,8 +43,8 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'mapUrl': 'MAP_URL',
   'id': 'ACTIVITY_ID',
   'points': 'POINTS',
-  'mapCid' : 'MAP_CID',
-  'mapBlob' : 'MAP_BLOB',
+  'mapCid': 'MAP_CID',
+  'mapBlob': 'MAP_BLOB',
 }
 
 
@@ -99,7 +99,7 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
   if (!attendees) {
     return null && Logger.log(`No recipients found for row: ${row}`);
   }
-  
+
   // Get activity and add headrun points from log
   const activityStats = findAndStoreStravaActivity(row);
   activityStats['points'] = getEventPointsInRow_(row);
@@ -111,7 +111,7 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
       acc.push(email);
       return acc;
     }, []
-  );
+    );
 
   const returnStatus = emailMemberStats_(recipientArr, activityStats);
 
@@ -133,13 +133,13 @@ function emailMemberStats_(recipients, activity) {
   const allStats = convertAndFormatStats_(activity);
 
   // Transform key labels in Strava to placeholder names in email
-  const {metric : metricStats, imperial : imperialStats} = filterEmailValues(allStats);
+  const { metric: metricStats, imperial: imperialStats } = filterEmailValues(allStats);
 
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
     const entry = getLedgerEntry(email, ledgerData);
     const memberTotalStats = sheetToEmailLabels(entry);  // Get values for post-run email
-    const preferredStats =  memberTotalStats['USE_METRIC'] ? metricStats : imperialStats;
+    const preferredStats = memberTotalStats['USE_METRIC'] ? metricStats : imperialStats;
 
     // Email report and log response
     res.push(emailReport_(email, { ...memberTotalStats, ...preferredStats }));
@@ -156,7 +156,7 @@ function emailMemberStats_(recipients, activity) {
   }
 
   function filterEmailValues(data) {
-    const ret = {metric : {}, imperial : {}};
+    const ret = { metric: {}, imperial: {} };
     const systems = Object.keys(ret);
 
     for (const [objKey, emailKey] of Object.entries(EMAIL_PLACEHOLDER_LABELS)) {
@@ -173,7 +173,7 @@ function emailMemberStats_(recipients, activity) {
 function emailReport_(email, memberStats) {
   // Create template to populate
   const template = HtmlService.createTemplateFromFile('Points Email V2');
-  
+
   // Get member's system preference to format email
   const useMetric = memberStats['USE_METRIC'];
   template.USE_METRIC = memberStats['USE_METRIC'];
@@ -200,11 +200,11 @@ function emailReport_(email, memberStats) {
 
   MailApp.sendEmail(
     message = {
-      to : email,
-      bcc : 'andrey.gonzalez@mail.mcgill.ca',
+      to: email,
+      bcc: 'andrey.gonzalez@mail.mcgill.ca',
       name: EMAIL_SENDER_NAME,
       subject: POINTS_EMAIL_SUBJECT,
-      replyTo : MCRUN_EMAIL,
+      replyTo: MCRUN_EMAIL,
       htmlBody: filledTemplate.getContent(),
     }
   );
@@ -232,38 +232,38 @@ function checkAndSendWinBackEmail() {
     throw new Error('Please switch to the McRUN Google Account before sending emails');
   }
 
-// points spreadsheet (currently the test page)
-   const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
-   // columns (0 indexed)
-   const EMAIL_COL = 0;
-   const FNAME_COL = 2;
-   const LAST_RUN_COL = 8;
- 
-   // make date object for 2 weeks ago
-   let dateThreshold = new Date();
-   dateThreshold.setDate(dateThreshold.getDate() - 14);
- 
-   // get all data entries as 2d array (row, col)
-   let allMembers = POINTS_SHEET.getDataRange().getValues();
- 
-   // loop through member entries (questionable efficiency)
-   // except first row which is the header
-   for (let i = 1; i < allMembers.length; i++) {
-     // check for last run date
-     let member = allMembers[i];
-     let lastRunAsStr = member[LAST_RUN_COL];
- 
-     // skip rows with no data
-     if (lastRunAsStr != '') { 
-       // convert last run date into date object
-       let lastRunAsDate = new Date(lastRunAsStr);
- 
-       // send reminder email if needed
-       if (lastRunAsDate < dateThreshold) {
-         sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
-       }
-     }
-   }
+  // points spreadsheet (currently the test page)
+  const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
+  // columns (0 indexed)
+  const EMAIL_COL = 0;
+  const FNAME_COL = 2;
+  const LAST_RUN_COL = 8;
+
+  // make date object for 2 weeks ago
+  let dateThreshold = new Date();
+  dateThreshold.setDate(dateThreshold.getDate() - 14);
+
+  // get all data entries as 2d array (row, col)
+  let allMembers = POINTS_SHEET.getDataRange().getValues();
+
+  // loop through member entries (questionable efficiency)
+  // except first row which is the header
+  for (let i = 1; i < allMembers.length; i++) {
+    // check for last run date
+    let member = allMembers[i];
+    let lastRunAsStr = member[LAST_RUN_COL];
+
+    // skip rows with no data
+    if (lastRunAsStr != '') {
+      // convert last run date into date object
+      let lastRunAsDate = new Date(lastRunAsStr);
+
+      // send reminder email if needed
+      if (lastRunAsDate < dateThreshold) {
+        sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
+      }
+    }
+  }
 }
 
 
@@ -284,38 +284,38 @@ function checkAndSendWinBackEmail() {
     throw new Error('Please switch to the McRUN Google Account before sending emails');
   }
 
-// points spreadsheet (currently the test page)
-   const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
-   // columns (0 indexed)
-   const EMAIL_COL = 0;
-   const FNAME_COL = 2;
-   const LAST_RUN_COL = 8;
- 
-   // make date object for 2 weeks ago
-   let dateThreshold = new Date();
-   dateThreshold.setDate(dateThreshold.getDate() - 14);
- 
-   // get all data entries as 2d array (row, col)
-   let allMembers = POINTS_SHEET.getDataRange().getValues();
- 
-   // loop through member entries (questionable efficiency)
-   // except first row which is the header
-   for (let i = 1; i < allMembers.length; i++) {
-     // check for last run date
-     let member = allMembers[i];
-     let lastRunAsStr = member[LAST_RUN_COL];
- 
-     // skip rows with no data
-     if (lastRunAsStr != '') { 
-       // convert last run date into date object
-       let lastRunAsDate = new Date(lastRunAsStr);
- 
-       // send reminder email if needed
-       if (lastRunAsDate < dateThreshold) {
-         sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
-       }
-     }
-   }
+  // points spreadsheet (currently the test page)
+  const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
+  // columns (0 indexed)
+  const EMAIL_COL = 0;
+  const FNAME_COL = 2;
+  const LAST_RUN_COL = 8;
+
+  // make date object for 2 weeks ago
+  let dateThreshold = new Date();
+  dateThreshold.setDate(dateThreshold.getDate() - 14);
+
+  // get all data entries as 2d array (row, col)
+  let allMembers = POINTS_SHEET.getDataRange().getValues();
+
+  // loop through member entries (questionable efficiency)
+  // except first row which is the header
+  for (let i = 1; i < allMembers.length; i++) {
+    // check for last run date
+    let member = allMembers[i];
+    let lastRunAsStr = member[LAST_RUN_COL];
+
+    // skip rows with no data
+    if (lastRunAsStr != '') {
+      // convert last run date into date object
+      let lastRunAsDate = new Date(lastRunAsStr);
+
+      // send reminder email if needed
+      if (lastRunAsDate < dateThreshold) {
+        sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
+      }
+    }
+  }
 }
 
 
