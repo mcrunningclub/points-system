@@ -93,7 +93,7 @@ function getLogInRow_(row = getValidLastRow(LOG_SHEET)) {
   return sheet.getSheetValues(row, 1, 1, numCols)[0];
 }
 
-function getLogAttendees_(row) {
+function getAttendeesInLog_(row) {
   // Get log attendees using stored index
   const attendeesCol = LOG_INDEX.ATTENDEE_NAME_EMAIL - 1;
   const thisLog = getLogInRow_(row);

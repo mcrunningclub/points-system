@@ -94,7 +94,7 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
   }
 
   // Get attendees from log
-  const attendees = getLogAttendees_(row);
+  const attendees = getAttendeesInLog_(row);
   if (!attendees) {
     Logger.log(`No recipients found for row: ${row}`);
     return null;
@@ -127,6 +127,7 @@ function emailMemberStats_(recipients, activity) {
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
   const ledgerData = GET_LEDGER_();
+  const isEmailAllowed = LEDGER_INDEX.EMAIL_ALLOWED--;    // Make 0-indexed for arr
   const res = [];
 
   // Get activity stats in metric and US imperial
@@ -138,6 +139,9 @@ function emailMemberStats_(recipients, activity) {
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
     const entry = getLedgerEntry(email, ledgerData);
+
+    if (!entry[isEmailAllowed]) continue;   // Only sent to members who consented
+
     const memberTotalStats = sheetToEmailLabels(entry);  // Get values for post-run email
     const preferredStats = memberTotalStats['USE_METRIC'] ? metricStats : imperialStats;
 

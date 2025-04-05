@@ -176,7 +176,7 @@ function uploadImageToBucket(imageBlob, imageName) {
 
   // Get service key to access cloud storage
   const store = PropertiesService.getScriptProperties();
-  const propertyName = SCRIPT_PROPERTY_KEYS.googleMapAPI;
+  const propertyName = SCRIPT_PROPERTY_KEYS.googleCloudKey;
   const SERVICE_ACCOUNT_KEY = JSON.parse(store.getProperty(propertyName));
 
   // Authenticate using the Service Account
