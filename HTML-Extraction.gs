@@ -3,7 +3,8 @@
  * 
  * Used to debug HTML file.
  * 
- * @author  [Andrey Gonzalez] (<andrey.gonzalez@mail.mcgill.ca>)
+ * @author  [Andrey Gonzalez] (<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
+ * 
  * @date Apr 2, 2025
  * @update Apr 3, 2025
  */
@@ -29,28 +30,20 @@ function extractTagsFromProjectFile() {
 }
 
 
-function testEmailBlob() {
-  const fileUrl = "https://drive.google.com/file/d/1hpjPIgtPGs-bcgX3zbS2m-kfkOeweWvJ/view";
-  const mapCid = "mapBlob";
-  const inlineImage = createInlineImage_(fileUrl, mapCid);
-
-  const recipient = "andrey.gonzalez@mail.mcgill.ca"; // Replace with recipient email
-  const subject = "Your Inline Image";
-
-  // HTML Email Body with inline image
-  const body = '<p>Here is your headrun map ❤️</p>' +
-               `<img src="cid:${mapCid}" width="500">`;
-
-  // Send email with inline image
-  MailApp.sendEmail({
-    to: recipient,
-    subject: subject,
-    htmlBody: body,
-    inlineImages: {mapCid : inlineImage}, // Attach image inline
-  });
-
-  Logger.log("Email sent with inline image!");
+function emailWebApp() {
+  const template = HtmlService.createTemplateFromFile('test');
+  const filledTemplate = template.evaluate();
+  
+  MailApp.sendEmail(
+    message = {
+      to : 'andrey.gonzalez@mail.mcgill.ca',
+      name: EMAIL_SENDER_NAME,
+      subject: 'Email Web App Test',
+      htmlBody: filledTemplate.getContent(),
+    }
+  );
 }
+
 
 
 function createInlineImage_(fileUrl, blobKey) {
@@ -67,41 +60,33 @@ function createInlineImage_(fileUrl, blobKey) {
 
 
 /**
- * User function to execute `generateHtmlFromDraft_`.
+ * Generate html version of email found in draft using its subject line.
  * 
  * Must updated subject line as needed.
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  */
 
 function saveDraftAsHtml() {
   const subjectLine = 'Here\'s your post-run report! 🙌';
   generateHtmlFromDraft_(subjectLine);
-}
 
+  function generateHtmlFromDraft_(subjectLine) {
+    const datetime = Utilities.formatDate(new Date(), TIMEZONE, 'MMM-dd\'T\'hh.mm');
+    const baseName = subjectLine.replace(/ /g, '-').toLowerCase();
 
-/**
- * Generate html version of email found in draft using its subject line.
- * 
- * @param {string} subjectLine  Subject line of target draft.
- * 
- * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- */
+    // Create filename for html file
+    const fileName = `${baseName}-${datetime}.html`;
 
-function generateHtmlFromDraft_(subjectLine) {
-  const datetime = Utilities.formatDate(new Date(), TIMEZONE, 'MMM-dd\'T\'hh.mm');
-  const baseName = subjectLine.replace(/ /g, '-').toLowerCase();
+    // Find template in drafts and get email objects
+    const emailTemplate = getGmailTemplateFromDrafts(subjectLine);
+    const msgObj = fillInTemplateFromObject_(emailTemplate.message, {});
 
-  // Create filename for html file
-  const fileName = `${baseName}-${datetime}.html`;
-
-  // Find template in drafts and get email objects
-  const emailTemplate = getGmailTemplateFromDrafts(subjectLine);
-  const msgObj = fillInTemplateFromObject_(emailTemplate.message, {});
-
-  // Save html file in drive
-  DriveApp.createFile(fileName, msgObj.html);
-  Logger.log(`Created HTML file '${fileName}'`);
+    // Save html file in drive
+    DriveApp.createFile(fileName, msgObj.html);
+    Logger.log(`Created HTML file '${fileName}'`);
+  }
 }
 
 
@@ -109,11 +94,12 @@ function testRuntime() {
   const recipient = 'andrey.gonzalez@mail.mcgill.ca';
   const startTime = new Date().getTime();
 
-  // Runtime if using DriveApp call : 1200ms
-  // If caching images in script properties once: 550 ms
-  sendSamosaEmailFromHTML(recipient, 'Test 5 samosa sale');
+  // Runtime if using DriveApp call : 
+  //  - 1 recipient: 5878ms
+  //  - 3 recipients : 8503 ms (forming blob for every recipient)
+  //  - 3 recipients: 6307ms (generating blob once)
 
-  //sendSamosaEmail();    // around 3000ms
+  sendStatsEmail();
   
   // Record the end time
   const endTime = new Date().getTime();
@@ -123,50 +109,6 @@ function testRuntime() {
   
   // Log the runtime
   Logger.log(`Function runtime: ${runtime} ms`);
-}
-
-
-/**
- * Sends email using member information.
- * 
- * @author  Martin Hawksey (2022)
- * @author2  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
- * 
- * @param {{key:value<string>}} memberInformation  Information to populate email draft
- * @return {{message:string, isError:bool}}  Status of sending email.
-*/
-function sendEmail_(memberInformation) {
-  // Gets the draft Gmail message to use as a template
-  const subjectLine = DRAFT_SUBJECT_LINE;
-  const emailTemplate = getGmailTemplateFromDrafts(subjectLine);
-
-  try {
-    const memberEmail = memberInformation['EMAIL'];
-    const msgObj = fillInTemplateFromObject_(emailTemplate.message, memberInformation);
-
-    //DriveApp.createFile('TestFile3b', msgObj.html);
-
-    MailApp.sendEmail(
-      'andrey.gonzalez@mail.mcgill.ca',
-      msgObj.subject,
-      msgObj.text,
-      {
-        htmlBody: msgObj.html,
-        from: 'mcrunningclub@ssmu.ca',
-        name: 'McGill Students Running Club',
-        replyTo: 'mcrunningclub@ssmu.ca',
-        attachments: emailTemplate.attachments,
-        inlineImages: emailTemplate.inlineImages
-      }
-    );
-
-  } catch(e) {
-    // Log and return error
-    console.log(`(sendEmail) ${e.message}`);
-    throw new Error(e);
-  }
-  // Return success message
-  return {message: 'Sent!', isError : false};
 }
 
 

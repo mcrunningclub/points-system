@@ -56,7 +56,6 @@ function stravaPlayground() {
         var endpoint = 'clubs/693906/members'
         var query_object = { "include_all_efforts": true };
         return callStravaAPI_(endpoint, query_object);
-
       }
 
       case 'B': {
@@ -363,7 +362,7 @@ function saveMapAsBlob_(polyline, timestamp) {
     .setSize(800, 600) // Adjust size as needed
     .setFormat(Maps.StaticMap.Format.PNG)
     .setMapType(Maps.StaticMap.Type.ROADMAP) // Use ROADMAP for a minimalist style
-    .setPathStyle(3, "0x000000FF", "0x00000000") // Thin black route line, transparent fill
+    .setPathStyle(3, "0x1155cc", "0x00000000") // Thin black route line, transparent fill
     .addPath(polyline)
   ;
 

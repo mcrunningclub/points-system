@@ -129,9 +129,6 @@ function emailMemberStats_(recipients, activity) {
   const ledgerData = GET_LEDGER_();
   const res = [];
 
-  // Add run map as blob instead of url
-  //addMapBlob("mapBlob");
-
   // Get activity stats in metric and US imperial
   const allStats = convertAndFormatStats_(activity);
 
@@ -146,17 +143,9 @@ function emailMemberStats_(recipients, activity) {
 
     // Email report and log response
     res.push(emailReport_(email, { ...memberTotalStats, ...preferredStats }));
-    break;
   }
 
   return res;
-
-  /** Generate and insert blob to member stats activity */
-  function addMapBlob(mapCid) {
-    const mapBlob = createInlineImage_(activity['mapUrl'], mapCid);
-    activity['mapCid'] = mapCid;
-    activity['mapBlob'] = mapBlob;
-  }
 
   /** Helper: Package run stats using ledger and `EMAIL_LEDGER_TARGETS` */
   function sheetToEmailLabels(entry) {
@@ -203,32 +192,20 @@ function emailReport_(email, memberStats) {
   template.MSPEED = memberStats['MSPEED'];
   template.POINTS = memberStats['POINTS'];
   template.ACTIVITY_ID = memberStats['ACTIVITY_ID'];
-
-  // Add run map as blob instead of url
-  // const mapCid = memberStats['MAP_CID'];
-  // template.MAP_CID = mapCid;
   template.MAP_URL = memberStats['MAP_URL'];
-
-  // <!--   href="https://www.strava.com/activities/<?= ACTIVITY_ID ?>" src="cid:<?= MAP_CID ?>" -->
 
   // Evaluate template and log message
   const filledTemplate = template.evaluate();
   Logger.log(`Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
 
-  // const inlineImages = {
-  //   mapCid : memberStats['MAP_BLOB'],
-  // };
-
   MailApp.sendEmail(
     message = {
-      //to : email,
-      to : 'andrey.gonzalez@mail.mcgill.ca',
-      //bcc : 'andrey.gonzalez@mail.mcgill.ca',
+      to : email,
+      bcc : 'andrey.gonzalez@mail.mcgill.ca',
       name: EMAIL_SENDER_NAME,
       subject: POINTS_EMAIL_SUBJECT,
       replyTo : MCRUN_EMAIL,
       htmlBody: filledTemplate.getContent(),
-      //inlineImages: inlineImages,
     }
   );
 
@@ -236,6 +213,57 @@ function emailReport_(email, memberStats) {
   const log = `Stats email sent to ${email}`;
   Logger.log(log);
   return log;
+}
+
+
+/**
+ * Automatically triggered to send reminder email to members whose
+ * "last run" date is over 2 weeks ago
+ * 
+ * @trigger every Monday
+ * 
+ * @author Mona Liu <mona.liu@mail.mcgill.ca>
+ * 
+ * @date 2025/03/30
+ */
+function checkAndSendWinBackEmail() {
+  // Prevent email sent by wrong user
+  if (getCurrentUserEmail_() != MCRUN_EMAIL) {
+    throw new Error('Please switch to the McRUN Google Account before sending emails');
+  }
+
+// points spreadsheet (currently the test page)
+   const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
+   // columns (0 indexed)
+   const EMAIL_COL = 0;
+   const FNAME_COL = 2;
+   const LAST_RUN_COL = 8;
+ 
+   // make date object for 2 weeks ago
+   let dateThreshold = new Date();
+   dateThreshold.setDate(dateThreshold.getDate() - 14);
+ 
+   // get all data entries as 2d array (row, col)
+   let allMembers = POINTS_SHEET.getDataRange().getValues();
+ 
+   // loop through member entries (questionable efficiency)
+   // except first row which is the header
+   for (let i = 1; i < allMembers.length; i++) {
+     // check for last run date
+     let member = allMembers[i];
+     let lastRunAsStr = member[LAST_RUN_COL];
+ 
+     // skip rows with no data
+     if (lastRunAsStr != '') { 
+       // convert last run date into date object
+       let lastRunAsDate = new Date(lastRunAsStr);
+ 
+       // send reminder email if needed
+       if (lastRunAsDate < dateThreshold) {
+         sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
+       }
+     }
+   }
 }
 
 
@@ -329,6 +357,47 @@ function sendWinBackEmail_(name, email) {
 }
 
 
+
+
+
+/**
+ * Creates reminder email from member name and template,
+ * sends it to given address
+ * 
+ * @param {String} name Member's first name
+ * @param {String} email Member's email address
+ * @returns None
+ * 
+ * @author Mona Liu <mona.liu@mail.mcgill.ca>
+ * 
+ * @date 2025/03/30
+ */
+function sendReminderEmail_(name, email) {
+  // set up email using template
+  const template = HtmlService.createTemplateFromFile('reminderemail');
+  template.FIRST_NAME = name;
+  const filledTemplate = template.evaluate();
+
+  // send email
+  try {
+    MailApp.sendEmail(
+      message = {
+        to: email,
+        name: EMAIL_SENDER_NAME,
+        subject: "We've missed you!",
+        htmlBody: filledTemplate.getContent()
+      }
+    );
+
+  } catch (e) {
+    Logger.log(e);
+  }
+
+  // Log confirmation for the sent email
+  Logger.log(`Reminder email sent to ${email}.`);
+}
+
+
 /** 
  * Function to send first iteration of Stats Email Template.
  * 
@@ -354,7 +423,7 @@ function mailMemberPointsV1_(trimmedName, email, points) {
   const subject = `Your Points Update`;
 
   MailApp.sendEmail({
-    //to: email,
+    to: email,
     subject: subject,
     htmlBody: pointsEmailHTML,
     name: EMAIL_SENDER_NAME,
