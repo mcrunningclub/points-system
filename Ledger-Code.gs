@@ -32,6 +32,7 @@ limitations under the License.
 function newSubmission() {
   formatSpecificColumns();
   sortTimestampByAscending();
+  //sendStatsEmail()
 }
 
 
@@ -99,11 +100,6 @@ function getLogAttendees_(row) {
 
   // Return log attendees
   return thisLog[attendeesCol];
-
-  /** Ensure input is not falsy and does not contain "None" */
-  function attendeeFilter(input) {
-    return input && !/\bNone\b/i.test(input);
-  }
 }
 
 function getMapUrlInRow_(row) {

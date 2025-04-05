@@ -21,7 +21,6 @@ limitations under the License.
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
 const POINTS_EMAIL_SUBJECT = "Here's your post-run report! 🙌";
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
-const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 const EMAIL_LEDGER_TARGETS = {
   'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
@@ -97,7 +96,8 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
   // Get attendees from log
   const attendees = getLogAttendees_(row);
   if (!attendees) {
-    return null && Logger.log(`No recipients found for row: ${row}`);
+    Logger.log(`No recipients found for row: ${row}`);
+    return null;
   }
 
   // Get activity and add headrun points from log
@@ -111,7 +111,7 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
       acc.push(email);
       return acc;
     }, []
-    );
+  );
 
   const returnStatus = emailMemberStats_(recipientArr, activityStats);
 
@@ -235,61 +235,13 @@ function checkAndSendWinBackEmail() {
   // points spreadsheet (currently the test page)
   const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
   // columns (0 indexed)
-  const EMAIL_COL = 0;
-  const FNAME_COL = 2;
-  const LAST_RUN_COL = 8;
+  const EMAIL_COL = LEDGER_INDEX.EMAIL--;    // const EMAIL_COL = 0;
+  const FNAME_COL = LEDGER_INDEX.FIRST_NAME--;   // const FNAME_COL = 2;
+  const LAST_RUN_COL = LEDGER_INDEX.LAST_RUN_DATE;   // const LAST_RUN_COL = 8;
 
-  // make date object for 2 weeks ago
-  let dateThreshold = new Date();
-  dateThreshold.setDate(dateThreshold.getDate() - 14);
+  // ^-- I refactored your code to use the centralized indices of the sheet
+  // to future-proof any columns adds/removes
 
-  // get all data entries as 2d array (row, col)
-  let allMembers = POINTS_SHEET.getDataRange().getValues();
-
-  // loop through member entries (questionable efficiency)
-  // except first row which is the header
-  for (let i = 1; i < allMembers.length; i++) {
-    // check for last run date
-    let member = allMembers[i];
-    let lastRunAsStr = member[LAST_RUN_COL];
-
-    // skip rows with no data
-    if (lastRunAsStr != '') {
-      // convert last run date into date object
-      let lastRunAsDate = new Date(lastRunAsStr);
-
-      // send reminder email if needed
-      if (lastRunAsDate < dateThreshold) {
-        sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
-      }
-    }
-  }
-}
-
-
-
-/**
- * Automatically triggered to send reminder email to members whose
- * "last run" date is over 2 weeks ago
- * 
- * @trigger every Monday
- * 
- * @author Mona Liu <mona.liu@mail.mcgill.ca>
- * 
- * @date 2025/03/30
- */
-function checkAndSendWinBackEmail() {
-  // Prevent email sent by wrong user
-  if (getCurrentUserEmail_() != MCRUN_EMAIL) {
-    throw new Error('Please switch to the McRUN Google Account before sending emails');
-  }
-
-  // points spreadsheet (currently the test page)
-  const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
-  // columns (0 indexed)
-  const EMAIL_COL = 0;
-  const FNAME_COL = 2;
-  const LAST_RUN_COL = 8;
 
   // make date object for 2 weeks ago
   let dateThreshold = new Date();
@@ -354,47 +306,6 @@ function sendWinBackEmail_(name, email) {
 
   // Log confirmation for the sent email
   Logger.log(`Win-back email sent to ${email}.`);
-}
-
-
-
-
-
-/**
- * Creates reminder email from member name and template,
- * sends it to given address
- * 
- * @param {String} name Member's first name
- * @param {String} email Member's email address
- * @returns None
- * 
- * @author Mona Liu <mona.liu@mail.mcgill.ca>
- * 
- * @date 2025/03/30
- */
-function sendReminderEmail_(name, email) {
-  // set up email using template
-  const template = HtmlService.createTemplateFromFile('reminderemail');
-  template.FIRST_NAME = name;
-  const filledTemplate = template.evaluate();
-
-  // send email
-  try {
-    MailApp.sendEmail(
-      message = {
-        to: email,
-        name: EMAIL_SENDER_NAME,
-        subject: "We've missed you!",
-        htmlBody: filledTemplate.getContent()
-      }
-    );
-
-  } catch (e) {
-    Logger.log(e);
-  }
-
-  // Log confirmation for the sent email
-  Logger.log(`Reminder email sent to ${email}.`);
 }
 
 

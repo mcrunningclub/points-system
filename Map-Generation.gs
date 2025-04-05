@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const MAPS_FOLDER = 'run_maps'
+const MAPS_FOLDER = 'run_maps';
+const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 
 /**
@@ -175,7 +176,7 @@ function uploadImageToBucket(imageBlob, imageName) {
 
   // Get service key to access cloud storage
   const store = PropertiesService.getScriptProperties();
-  const propertyName = SCRIPT_PROPERTY_KEYS.googleMapAPI
+  const propertyName = SCRIPT_PROPERTY_KEYS.googleMapAPI;
   const SERVICE_ACCOUNT_KEY = JSON.parse(store.getProperty(propertyName));
 
   // Authenticate using the Service Account

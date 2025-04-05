@@ -16,16 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/'
-const ACTIVITIES_ENDPOINT = 'athlete/activities'
-
-// SCRIPT PROPERTIES (MAKE SURE THAT NAMES MATCHES ACTUAL STORE)
-const SCRIPT_PROPERTY_KEYS = {
-  clientID: 'CLIENT_ID',
-  clientSecret: 'CLIENT_SECRET',
-  googleMapAPI: 'GOOGLE_MAPS_API_KEY',
-  googleCloudKey: 'GOOGLE_CLOUD_KEY',
-};
+const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/';
+const ACTIVITIES_ENDPOINT = 'athlete/activities';
 
 const LOG_TARGETS = {
   'id': LOG_INDEX.STRAVA_ACTIVITY_ID,      // (long)

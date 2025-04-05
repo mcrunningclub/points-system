@@ -34,6 +34,16 @@ function GET_LEDGER_() {
 const TIMEZONE = getUserTimeZone_();
 const MCRUN_EMAIL = 'mcrunningclub@ssmu.ca';
 
+
+/** SCRIPT PROPERTIES (MAKE SURE NAMES MATCHES ACTUAL STORE) */
+const SCRIPT_PROPERTY_KEYS = {
+  clientID: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
+  googleMapAPI: 'GOOGLE_MAPS_API_KEY',
+  googleCloudKey: 'GOOGLE_CLOUD_KEY',
+};
+
+
 /** RUN LEVELS + COUNT */
 const ATTENDEE_MAP = {
   // 'beginner': ATTENDEES_BEGINNER_COL,
@@ -43,10 +53,6 @@ const ATTENDEE_MAP = {
 };
 
 const LEVEL_COUNT = Object.keys(ATTENDEE_MAP).length;
-
-/** EXTERNAL SHEETS */
-const ATTENDANCE_SHEET_NAME = 'HR Attendance W25';
-const ATTENDANCE_URL = 'https://docs.google.com/spreadsheets/d/1SnaD9UO4idXXb07X8EakiItOOORw5UuEOg0dX_an3T4/';
 
 
 /** STORES INDEX OF COLUMNS IN POINTS_SHEET */
