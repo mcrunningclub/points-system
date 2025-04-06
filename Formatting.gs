@@ -190,17 +190,44 @@ function getNumberFormatMap_() {
 }
 
 
-function testActivityFormatting() {
-  const activity = {
-    'distance': 5998.9,
-    'elapsed_time': 2766,
-    'average_speed': 3.616,
-    'max_speed': 4.84,
-    'total_elevation_gain' : 24.7,
-    'points' : 100,
-  }
-  
-  const ret = convertAndFormatStats_(activity);
-  console.log(activity);
-  console.log(ret);
+/**
+ * Fill template string with data object
+ * @author Martin Hawksey
+ * @see https://stackoverflow.com/a/378000/1027723
+ * @param {string} template string containing {{}} markers which are replaced with data
+ * @param {object} data object used to replace {{}} markers
+ * @return {object} message replaced with data
+ * 
+ * @update  Explicit string conversion of values for `escapeData`.
+*/
+function fillInTemplateFromObject_(template, data) {
+  // We have two templates one for plain text and the html body
+  // Stringifing the object means we can do a global replace
+  let template_string = JSON.stringify(template);
+
+  // Token replacement
+  template_string = template_string.replace(/{{[^{{}}]+}}/g, key => {
+    return escapeData_(`${data[key.replace(/[{{}}]+/g, "")]}` || "");
+  });
+
+
+  return JSON.parse(template_string);
 }
+
+/**
+ * Escape cell data to make JSON safe
+ * @see https://stackoverflow.com/a/9204218/1027723
+ * @param {string} str to escape JSON special characters from
+ * @return {string} escaped string
+*/
+function escapeData_(str) {
+  return str
+    .replace(/[\\]/g, '\\\\')
+    .replace(/[\"]/g, '\\\"')
+    .replace(/[\/]/g, '\\/')
+    .replace(/[\b]/g, '\\b')
+    .replace(/[\f]/g, '\\f')
+    .replace(/[\n]/g, '\\n')
+    .replace(/[\r]/g, '\\r')
+    .replace(/[\t]/g, '\\t');
+};

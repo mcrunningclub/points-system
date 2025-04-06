@@ -313,100 +313,30 @@ function sendWinBackEmail_(name, email) {
 }
 
 
-/** 
- * Function to send first iteration of Stats Email Template.
- * 
- * @author [Charles Villegas](<charles.villegas@mail.mcgill.ca>) & ChatGPT
- * @deprecated
- */
+/** Used to automatically send post run email after new activity log */
+function onChange(e) {
+  // Get details of edit event's sheet
+  console.log({
+    changeType: e.changeType,
+    user: e.user,
+  });
 
-function mailMemberPointsV1_(trimmedName, email, points) {
-  // Exit if no email found for member
-  if (!email) {
-    return Logger.log(`No email found for ${trimmedName}.`);
+  const thisSource = e.source;
+
+  // Try-catch to prevent errors when sheetId cannot be found
+  try {
+    const thisSheetID = thisSource.getSheetId();
+    const thisChange = e.changeType;
+    console.log(`Change Type: ${thisChange}`);
+
+    if (thisSheetID === LOG_SHEET_ID && thisChange === 'INSERT_ROW') {
+      sendStatsEmail();
+      console.log('Exiting `sendStatsEmail` from onChange(e) successfully!');
+    }
+
   }
-
-  // Prepare the HTML body from the template
-  const template = HtmlService.createTemplateFromFile('Points Email V1');
-  template.FIRST_NAME = firstName;
-  template.MEMBER_POINTS = points;
-
-  // Returns string content from populated html template
-  const pointsEmailHTML = template.evaluate().getContent();
-
-  // Construct and send the email
-  const subject = `Your Points Update`;
-
-  MailApp.sendEmail({
-    to: email,
-    subject: subject,
-    htmlBody: pointsEmailHTML,
-    name: EMAIL_SENDER_NAME,
-  });
-
-  // Log confirmation for the sent email with values for each variable
-  Logger.log(`Email sent to ${trimmedName} at ${email} with ${points} points.`);
+  catch (error) {
+    console.log('Whoops! Error raised in onChange(e)');
+    Log.console(error);
+  }
 }
-
-
-/*
-Copyright 2022 Martin Hawksey
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-Helper function to fill email template.
-
-- Added explicit string conversion of values for `escapeData`.
-*/
-
-/**
- * Fill template string with data object
- * @see https://stackoverflow.com/a/378000/1027723
- * @param {string} template string containing {{}} markers which are replaced with data
- * @param {object} data object used to replace {{}} markers
- * @return {object} message replaced with data
- * 
- * @update  Explicit string conversion of values for `escapeData`.
-*/
-function fillInTemplateFromObject_(template, data) {
-  // We have two templates one for plain text and the html body
-  // Stringifing the object means we can do a global replace
-  let template_string = JSON.stringify(template);
-
-  // Token replacement
-  template_string = template_string.replace(/{{[^{{}}]+}}/g, key => {
-    return escapeData_(`${data[key.replace(/[{{}}]+/g, "")]}` || "");
-  });
-
-
-  return JSON.parse(template_string);
-}
-
-/**
- * Escape cell data to make JSON safe
- * @see https://stackoverflow.com/a/9204218/1027723
- * @param {string} str to escape JSON special characters from
- * @return {string} escaped string
-*/
-function escapeData_(str) {
-  return str
-    .replace(/[\\]/g, '\\\\')
-    .replace(/[\"]/g, '\\\"')
-    .replace(/[\/]/g, '\\/')
-    .replace(/[\b]/g, '\\b')
-    .replace(/[\f]/g, '\\f')
-    .replace(/[\n]/g, '\\n')
-    .replace(/[\r]/g, '\\r')
-    .replace(/[\t]/g, '\\t');
-};
-

@@ -30,22 +30,6 @@ function extractTagsFromProjectFile() {
 }
 
 
-function emailWebApp() {
-  const template = HtmlService.createTemplateFromFile('test');
-  const filledTemplate = template.evaluate();
-  
-  MailApp.sendEmail(
-    message = {
-      to : 'andrey.gonzalez@mail.mcgill.ca',
-      name: EMAIL_SENDER_NAME,
-      subject: 'Email Web App Test',
-      htmlBody: filledTemplate.getContent(),
-    }
-  );
-}
-
-
-
 function createInlineImage_(fileUrl, blobKey) {
   // Extract file id from url. 
   // For cases like .../file/d/FILE_ID/... and ...&id=FILE_ID...

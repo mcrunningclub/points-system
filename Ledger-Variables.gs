@@ -21,6 +21,7 @@ const LEDGER_SHEET = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
 
 const LOG_SHEET_NAME = 'Event Log';
 const LOG_SHEET = LEDGER_SS.getSheetByName(LOG_SHEET_NAME);
+const LOG_SHEET_ID = LOG_SHEET.getSheetId();
 
 let LEDGER_DATA = null;
 
