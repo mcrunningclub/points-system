@@ -219,6 +219,10 @@ function emailReport_(email, memberStats) {
   return log;
 }
 
+function testQuickEmail() {
+  sendStatsEmail();
+}
+
 
 /**
  * Automatically triggered to send reminder email to members whose
@@ -337,6 +341,6 @@ function onChange(e) {
   }
   catch (error) {
     console.log('Whoops! Error raised in onChange(e)');
-    Log.console(error);
+    Logger.log(error);
   }
 }
