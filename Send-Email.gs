@@ -214,14 +214,11 @@ function emailReport_(email, memberStats) {
   );
 
   // Log confirmation for the sent email with member stats
-  const log = `Stats email sent to ${email}`;
-  Logger.log(log);
-  return log;
+  const confirmation = `Stats email sent to ${email}`;
+  Logger.log(confirmation);
+  return confirmation;
 }
 
-function testQuickEmail() {
-  sendStatsEmail();
-}
 
 
 /**
@@ -314,33 +311,4 @@ function sendWinBackEmail_(name, email) {
 
   // Log confirmation for the sent email
   Logger.log(`Win-back email sent to ${email}.`);
-}
-
-
-/** Used to automatically send post run email after new activity log */
-function onChange(e) {
-  // Get details of edit event's sheet
-  console.log({
-    changeType: e.changeType,
-    user: e.user,
-  });
-
-  const thisSource = e.source;
-
-  // Try-catch to prevent errors when sheetId cannot be found
-  try {
-    const thisSheetID = thisSource.getSheetId();
-    const thisChange = e.changeType;
-    console.log(`Change Type: ${thisChange}`);
-
-    if (thisSheetID === LOG_SHEET_ID && thisChange === 'INSERT_ROW') {
-      sendStatsEmail();
-      console.log('Exiting `sendStatsEmail` from onChange(e) successfully!');
-    }
-
-  }
-  catch (error) {
-    console.log('Whoops! Error raised in onChange(e)');
-    Logger.log(error);
-  }
 }
