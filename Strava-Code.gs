@@ -64,7 +64,7 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
   }
 
   // No activity stored, call Strava API instead
-  // Get timestamp from row
+  // Get timestamp from row to use as filter
   const timestamp = getSubmissionTimestamp(row);
   const offset = 1000 * 60 * 60 * 2;    // 2 hours in seconds
   const limit = Math.floor((timestamp.getTime() + offset) / 1000);
@@ -89,8 +89,8 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
 
 
 function getAllActivities() {
-  const startRow = 88;
-  const endRow = 88; //getValidLastRow(LOG_SHEET);
+  const startRow = 92;
+  const endRow = 94; //getValidLastRow(LOG_SHEET);
   for (let row = startRow; row <= endRow; row++) {
     findAndStoreStravaActivity(row);
   }

@@ -102,6 +102,9 @@ function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
 
   // Get activity and add headrun points from log
   const activityStats = findAndStoreStravaActivity(row);
+  if (!activityStats) return;   // Cannot send email without stats
+
+  // Otherwise send email with extracted stats
   activityStats['points'] = getEventPointsInRow_(row);
 
   // Extract email and store in arr
