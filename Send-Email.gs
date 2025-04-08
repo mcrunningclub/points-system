@@ -63,7 +63,7 @@ function fTest() {
 }
 
 
-function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(logSheet)) {
+function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_(logSheet)) {
   // Update the status of sending email
   const currentTime = Utilities.formatDate(new Date(), TIMEZONE, '[dd-MMM HH:mm:ss] ---');
   const statusRange = logSheet.getRange(thisRow, LOG_INDEX.EMAIL_STATUS);
@@ -79,6 +79,9 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(
  * Function to send email to each member updating them on their points
  *
  * @trigger  New headrun submission  // OLD: The 1st and 14th of every month
+ * 
+ * @param {Spreadsheet.sheet} logSheet
+ * @param {integer} row
  *
  * @author [Charles Villegas](<charles.villegas@mail.mcgill.ca>) & ChatGPT
  * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
@@ -87,7 +90,7 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow(
  * @update  Apr 3, 2025
  */
 
-function sendStatsEmail(logSheet = LOG_SHEET, row = getValidLastRow(logSheet)) {
+function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logSheet)) {
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
     throw new Error('Please switch to the McRUN Google Account before sending emails');
@@ -141,7 +144,7 @@ function emailMemberStats_(recipients, activity) {
 
   // Loop through emails, package member data, then send email
   for (const email of recipients) {
-    const entry = getLedgerEntry(email, ledgerData);
+    const entry = getLedgerEntry_(email, ledgerData);
 
     if (!entry[isEmailAllowed]) continue;   // Only sent to members who consented
 

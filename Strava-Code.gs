@@ -51,7 +51,7 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
  * @update  Apr 4, 2025
  */
 
-function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
+function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   if (getCurrentUserEmail_() !== MCRUN_EMAIL) {
     throw Error("Please switch to the McRUN account before continuing");
   }
@@ -65,7 +65,7 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
 
   // No activity stored, call Strava API instead
   // Get timestamp from row to use as filter
-  const timestamp = getSubmissionTimestamp(row);
+  const timestamp = getSubmissionTimestamp_(row);
   const offset = 1000 * 60 * 60 * 2;    // 2 hours in seconds
   const limit = Math.floor((timestamp.getTime() + offset) / 1000);
 
@@ -80,7 +80,7 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
     const mapBlob = createStravaMap_(activity, filename);
 
     // Upload image to Google Cloud Storage and get sharing link
-    activity['mapUrl'] = uploadImageToBucket(mapBlob, filename);
+    activity['mapUrl'] = uploadImageToBucket_(mapBlob, filename);
     setStravaStats_(row, activity);
   }
 
@@ -90,7 +90,7 @@ function findAndStoreStravaActivity(row = getValidLastRow(LOG_SHEET)) {
 
 function getAllActivities() {
   const startRow = 92;
-  const endRow = 94; //getValidLastRow(LOG_SHEET);
+  const endRow = 94;
   for (let row = startRow; row <= endRow; row++) {
     findAndStoreStravaActivity(row);
   }
@@ -113,8 +113,8 @@ function getAllActivities() {
  * @update  Apr 1, 2025
  */
 
-function checkForExistingStrava_(row = getValidLastRow(LOG_SHEET)) {
-  const sheet = LOG_SHEET;
+function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
+  const sheet = GET_LOG_SHEET_();
   const startCol = LOG_INDEX.STRAVA_ACTIVITY_ID;
   const endCol = LOG_INDEX.MAP_URL;
 
@@ -167,7 +167,7 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
 
 
 function setStravaStats_(row, activity) {
-  const sheet = LOG_SHEET;
+  const sheet = GET_LOG_SHEET_();
   const statsMap = Object.entries(LOG_TARGETS);
 
   // Get range from Strava Account to Map Polyline

@@ -161,7 +161,7 @@ function testCloudUpload() {
   const imageName = "headrun-map-" + time + '.png';
 
   try {
-    const imageUrl = uploadImageToBucket(blob, imageName);
+    const imageUrl = uploadImageToBucket_(blob, imageName);
     Logger.log("Uploaded image URL: " + imageUrl);
   } catch (e) {
     Logger.log("Error during upload: " + e);
@@ -169,7 +169,7 @@ function testCloudUpload() {
 }
 
 
-function uploadImageToBucket(imageBlob, imageName) {
+function uploadImageToBucket_(imageBlob, imageName) {
   // Name of bucket in Google Cloud Storage
   const STORAGE_BUCKET_NAME = 'run-map-storage.firebasestorage.app';
   const BASE_UPLOAD_URL = "https://storage.googleapis.com/upload/storage/v1/b";

@@ -47,12 +47,12 @@ function newSubmission() {
  * @update  Mar 23, 2025
  */
 
-function getLatestSubmissionTimestamp() {
-  return getSubmissionTimestamp(getValidLastRow(LOG_SHEET));
+function getLatestSubmissionTimestamp_() {
+  return getSubmissionTimestamp_(getValidLastRow_(GET_LOG_SHEET_()));
 }
 
-function getSubmissionTimestamp(row) {
-  const sheet = LOG_SHEET;
+function getSubmissionTimestamp_(row) {
+  const sheet = GET_LOG_SHEET_();
   const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
   const timestamp = sheet.getRange(row, timestampCol).getValue();
   return new Date(timestamp);
@@ -72,7 +72,7 @@ function getSubmissionTimestamp(row) {
  * @update  Mar 23, 2025
  */
 
-function getValidLastRow(sheet) {
+function getValidLastRow_(sheet) {
   let lastRow = sheet.getLastRow();
 
   while (sheet.getRange(lastRow, 1).getValue() == "") {
@@ -87,7 +87,7 @@ function getLatestLog_() {
   return getLogInRow_();
 }
 
-function getLogInRow_(row = getValidLastRow(LOG_SHEET)) {
+function getLogInRow_(row = getValidLastRow_(LOG_SHEET)) {
   const sheet = LOG_SHEET;
   const numCols = sheet.getLastColumn();
   return sheet.getSheetValues(row, 1, 1, numCols)[0];
@@ -135,13 +135,13 @@ function getLedgerData_(numCols = LEDGER_COL_COUNT) {
   // Define dimensions of sheet data
   const startCol = 1;
   const startRow = 2;
-  const numRows = getValidLastRow(pointSheet) - 1;   // Remove header row
+  const numRows = getValidLastRow_(pointSheet) - 1;   // Remove header row
 
   return pointSheet.getSheetValues(startRow, startCol, numRows, numCols);
 }
 
 
-function getLedgerEntry(email, ledgerData) {
+function getLedgerEntry_(email, ledgerData) {
   const row = findMemberInLedger_(email, ledgerData);
   return ledgerData[row] ?? [];
 }
@@ -199,5 +199,43 @@ function findMemberInLedger_(emailToFind, ledger) {
       return findThisEmailBinarySearch(start, mid - 1);
     }
   };
+}
+
+
+/** 
+ * Handles the transfered submission from Attendance Code.
+ * 
+ * @param {Array[][]} importArr  Submission array with non-empty run levels.
+ * @return {integer}  The newly added row number in Log sheet
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date  Apr 8, 2025
+ * @update  Apr 8, 2025
+ * 
+ */
+
+function storeImportFromAttendanceSheet(importArr) {
+  const logSheet = GET_LOG_SHEET_();
+  Logger.log('Processing following import...');
+  Logger.log(importArr);
+
+  const logNewRow = getValidLastRow_(logSheet) + 1;
+
+  try {
+    const packageNumRows = importArr.length;
+    const packageNumCols = importArr[0].length;
+    
+    // Now set import as-if (processing occured in Attendance Sheet)
+    logSheet.getRange(logNewRow, 1, packageNumRows, packageNumCols).setValues(importArr);
+
+    // Log success message
+    console.log(`Successfully imported values to row ${logNewRow} (Log sheet)`);
+  }
+  catch (e) {
+    Logger.log("Unable to fully process 'importArr' in Points Ledger Code");
+    throw e;
+  }
+
+  return logNewRow;
 }
 

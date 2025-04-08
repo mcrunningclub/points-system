@@ -16,12 +16,13 @@ limitations under the License.
 
 /** SHEET CONSTANTS */
 const LEDGER_SS = SpreadsheetApp.getActiveSpreadsheet();
+const LEDGER_SS_ID = '13ps2HsOz-ZLg8xc0RYhKl7eg3BOs1MYVrwS0jxP3FTc';
+
 const LEDGER_SHEET_NAME = 'Member Points';
 const LEDGER_SHEET = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
 
 const LOG_SHEET_NAME = 'Event Log';
 const LOG_SHEET = LEDGER_SS.getSheetByName(LOG_SHEET_NAME);
-const LOG_SHEET_ID = LOG_SHEET.getSheetId();
 
 let LEDGER_DATA = null;
 
@@ -30,6 +31,12 @@ function GET_LEDGER_() {
     LEDGER_DATA = getLedgerData_();
   }
   return LEDGER_DATA;
+}
+
+// ALLOWS PROPER SHEET REF WHEN ACCESSING AS LIBRARY FROM EXTERNAL SCRIPT
+// SpreadsheetApp.getActiveSpreadsheet() DOES NOT WORK IN EXTERNAL SCRIPT
+const GET_LOG_SHEET_ = () => {
+  return (LOG_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LOG_SHEET_NAME);
 }
 
 const TIMEZONE = getUserTimeZone_();
@@ -99,6 +106,7 @@ const LOG_INDEX = {
   MAP_POLYLINE: 15,
   MAP_URL: 16,
 }
+
 
 function getUserTimeZone_() {
   return Session.getScriptTimeZone();

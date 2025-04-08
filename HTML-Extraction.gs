@@ -64,7 +64,7 @@ function saveDraftAsHtml() {
     const fileName = `${baseName}-${datetime}.html`;
 
     // Find template in drafts and get email objects
-    const emailTemplate = getGmailTemplateFromDrafts(subjectLine);
+    const emailTemplate = getGmailTemplateFromDrafts_(subjectLine);
     const msgObj = fillInTemplateFromObject_(emailTemplate.message, {});
 
     // Save html file in drive
@@ -106,7 +106,7 @@ function testRuntime() {
  * @return {object} containing the subject, plain and html message body and attachments
 */
 
-function getGmailTemplateFromDrafts(subjectLine = DRAFT_SUBJECT_LINE){
+function getGmailTemplateFromDrafts_(subjectLine = DRAFT_SUBJECT_LINE){
   // Verify if McRUN draft to search
   if (Session.getActiveUser().getEmail() != MCRUN_EMAIL) {
     return Logger.log('Change Gmail Account');

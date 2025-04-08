@@ -56,7 +56,7 @@ function formatSpecificColumns() {
   rangeIsAdded.insertCheckboxes();  // Add checkbox
 
   // Formats only last row of attendees
-  let attendeesCell = sheet.getRange(getValidLastRow(sheet), 5);
+  let attendeesCell = sheet.getRange(getValidLastRow_(sheet), 5);
 
   if (attendeesCell.toString().length > 1) {
     let splitArray = attendeesCell.getValue().split('\n');  // split the string into an array;
