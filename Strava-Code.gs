@@ -23,7 +23,7 @@ const LOG_TARGETS = {
   'id': LOG_INDEX.STRAVA_ACTIVITY_ID,      // (long)
   'name': LOG_INDEX.STRAVA_ACTIVITY_NAME,  // (string)
   'distance': LOG_INDEX.DISTANCE_STRAVA,   // meters (float)
-  'elapsed_time': LOG_INDEX.ELAPSED_TIME,  // seconds (int)
+  'moving_time': LOG_INDEX.MOVING_TIME,  // seconds (int)
   'average_speed': LOG_INDEX.PACE,         // m per sec (float)
   'max_speed': LOG_INDEX.MAX_SPEED,        // m per sec (float)
   'total_elevation_gain': LOG_INDEX.ELEVATION,   // meters (float)

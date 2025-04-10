@@ -35,7 +35,7 @@ const EMAIL_LEDGER_TARGETS = {
 
 const EMAIL_PLACEHOLDER_LABELS = {
   'distance': 'DISTANCE',
-  'elapsed_time': 'DURATION',
+  'moving_time': 'DURATION',
   'average_speed': 'PACE',
   'total_elevation_gain': 'ELEVATION',
   'max_speed': 'MSPEED',
@@ -117,7 +117,7 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logS
       acc.push(email);
       return acc;
     }, []
-  );
+    );
 
   const returnStatus = emailMemberStats_(recipientArr, activityStats);
 
@@ -182,7 +182,7 @@ function emailMemberStats_(recipients, activity) {
 
 function emailReport_(email, memberStats) {
   // Create template to populate
-  const template = HtmlService.createTemplateFromFile('Points Email V1');
+  const template = HtmlService.createTemplateFromFile('Post-Run Email');
 
   // Get member's system preference to format email
   const useMetric = memberStats['USE_METRIC'];

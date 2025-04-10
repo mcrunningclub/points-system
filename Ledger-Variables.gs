@@ -24,6 +24,7 @@ const LEDGER_SHEET = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
 const LOG_SHEET_NAME = 'Event Log';
 const LOG_SHEET = LEDGER_SS.getSheetByName(LOG_SHEET_NAME);
 
+
 let LEDGER_DATA = null;
 
 function GET_LEDGER_() {
@@ -39,6 +40,11 @@ const GET_LOG_SHEET_ = () => {
   return (LOG_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LOG_SHEET_NAME);
 }
 
+const GET_LEDGER_SHEET_ = () => {
+  return (LEDGER_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LEDGER_SHEET_NAME);
+}
+
+/** IMPORTANT FOR DATETIME FORMATTING AND SENDING EMAILS */
 const TIMEZONE = getUserTimeZone_();
 const MCRUN_EMAIL = 'mcrunningclub@ssmu.ca';
 
@@ -99,7 +105,7 @@ const LOG_INDEX = {
   STRAVA_ACTIVITY_ID: 8,
   STRAVA_ACTIVITY_NAME: 9,
   DISTANCE_STRAVA: 10,
-  ELAPSED_TIME: 11,
+  MOVING_TIME: 11,
   PACE: 12,
   MAX_SPEED: 13,
   ELEVATION: 14,

@@ -130,7 +130,7 @@ function getLogCell_(row, column) {
  */
 
 function getLedgerData_(numCols = LEDGER_COL_COUNT) {
-  const pointSheet = LEDGER_SHEET;
+  const pointSheet = GET_LEDGER_SHEET_();
 
   // Define dimensions of sheet data
   const startCol = 1;

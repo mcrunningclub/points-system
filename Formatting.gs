@@ -148,7 +148,7 @@ function getUnitsMap_() {
 
   return {
     'distance': pack(M_TO_KM, M_TO_MI),
-    'elapsed_time': pack(1, 1),   // Leave as seconds to format as 'mm:ss' later
+    'moving_time': pack(1, 1),   // Leave as seconds to format as 'mm:ss' later
     'average_speed': pack(M_PER_SEC_TO_SEC_PER_KM, M_PER_SEC_TO_SEC_PER_MI),  // Likewise
     'max_speed': pack(M_PER_SEC_TO_KM_PER_H, M_PER_SEC_TO_MI_PER_H),
     'total_elevation_gain' : pack(1, M_TO_FEET),
@@ -163,7 +163,7 @@ function getUnitsMap_() {
 function getNumberFormatMap_() {
   return {
     'distance': x => toFixedTruncate(x, 2),
-    'elapsed_time': x => toMinuteSeconds(x),
+    'moving_time': x => toMinuteSeconds(x),
     'average_speed': x => toMinuteSeconds(x),
     'max_speed': x => x.toFixed(1),
     'total_elevation_gain' : x => {
