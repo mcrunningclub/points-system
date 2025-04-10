@@ -133,7 +133,7 @@ function emailMemberStats_(recipients, activity) {
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
   const ledgerData = GET_LEDGER_();
-  const isEmailAllowed = LEDGER_INDEX.EMAIL_ALLOWED--;    // Make 0-indexed for arr
+  const isEmailAllowed = LEDGER_INDEX.EMAIL_ALLOWED - 1;    // Make 0-indexed for arr
   const res = [];
 
   // Get activity stats in metric and US imperial
@@ -182,7 +182,7 @@ function emailMemberStats_(recipients, activity) {
 
 function emailReport_(email, memberStats) {
   // Create template to populate
-  const template = HtmlService.createTemplateFromFile('Points Email V2');
+  const template = HtmlService.createTemplateFromFile('Points Email V1');
 
   // Get member's system preference to format email
   const useMetric = memberStats['USE_METRIC'];
@@ -246,9 +246,9 @@ function checkAndSendWinBackEmail() {
   // points spreadsheet (currently the test page)
   const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
   // columns (0 indexed)
-  const EMAIL_COL = LEDGER_INDEX.EMAIL--;    // const EMAIL_COL = 0;
-  const FNAME_COL = LEDGER_INDEX.FIRST_NAME--;   // const FNAME_COL = 2;
-  const LAST_RUN_COL = LEDGER_INDEX.LAST_RUN_DATE;   // const LAST_RUN_COL = 8;
+  const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;    // const EMAIL_COL = 0;
+  const FNAME_COL = LEDGER_INDEX.FIRST_NAME - 1;   // const FNAME_COL = 2;
+  const LAST_RUN_COL = LEDGER_INDEX.LAST_RUN_DATE - 1;   // const LAST_RUN_COL = 8;
 
   // ^-- I refactored your code to use the centralized indices of the sheet
   // to future-proof any columns adds/removes

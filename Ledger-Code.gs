@@ -88,7 +88,7 @@ function getLatestLog_() {
 }
 
 function getLogInRow_(row = getValidLastRow_(LOG_SHEET)) {
-  const sheet = LOG_SHEET;
+  const sheet = GET_LOG_SHEET_();
   const numCols = sheet.getLastColumn();
   return sheet.getSheetValues(row, 1, 1, numCols)[0];
 }
@@ -111,7 +111,7 @@ function getEventPointsInRow_(row) {
 }
 
 function getLogCell_(row, column) {
-  const sheet = LOG_SHEET;
+  const sheet = GET_LOG_SHEET_();
   return sheet.getRange(row, column).getValue();
 }
 
@@ -224,6 +224,9 @@ function storeImportFromAttendanceSheet(importArr) {
   try {
     const packageNumRows = importArr.length;
     const packageNumCols = importArr[0].length;
+
+    // Print number of rows and columns
+    console.log(`Row count: ${packageNumRows}\tCol count: ${packageNumCols}`);
     
     // Now set import as-if (processing occured in Attendance Sheet)
     logSheet.getRange(logNewRow, 1, packageNumRows, packageNumCols).setValues(importArr);

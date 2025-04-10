@@ -10,5 +10,9 @@
         "version": "43"
       }
     ]
+  },
+  "webapp": {
+    "executeAs": "USER_ACCESSING",
+    "access": "ANYONE"
   }
 }
