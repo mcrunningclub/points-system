@@ -93,13 +93,13 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_
 function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logSheet)) {
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
-    throw new Error('Please switch to the McRUN Google Account before sending emails');
+    throw new Error('[PL] Please switch to the McRUN Google Account before sending emails');
   }
 
   // Get attendees from log
   const attendees = getAttendeesInLog_(row);
   if (!attendees) {
-    Logger.log(`No recipients found for row: ${row}`);
+    Logger.log(`[PL] No recipients found for row: ${row}`);
     return null;
   }
 
@@ -124,7 +124,7 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logS
   // Print log and save return status of `emailMemberStats`
   console.log(activityStats);
   logStatus_(returnStatus, logSheet, row);
-  Logger.log(`Successfully executed 'sendStatsEmail' and logged messages in sheet`);
+  Logger.log(`[PL] Successfully executed 'sendStatsEmail' and logged messages in sheet`);
 }
 
 

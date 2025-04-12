@@ -210,13 +210,13 @@ function findMemberInLedger_(emailToFind, ledger) {
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Apr 8, 2025
- * @update  Apr 8, 2025
+ * @update  Apr 12, 2025
  * 
  */
 
 function storeImportFromAttendanceSheet(importArr) {
   const logSheet = GET_LOG_SHEET_();
-  Logger.log('Processing following import...');
+  Logger.log('[PL] Processing following import...');
   Logger.log(importArr);
 
   const logNewRow = getValidLastRow_(logSheet) + 1;
@@ -226,16 +226,16 @@ function storeImportFromAttendanceSheet(importArr) {
     const packageNumCols = importArr[0].length;
 
     // Print number of rows and columns
-    console.log(`Row count: ${packageNumRows}\tCol count: ${packageNumCols}`);
+    console.log(`[PL] Row count: ${packageNumRows}\tCol count: ${packageNumCols}`);
     
     // Now set import as-if (processing occured in Attendance Sheet)
     logSheet.getRange(logNewRow, 1, packageNumRows, packageNumCols).setValues(importArr);
 
     // Log success message
-    console.log(`Successfully imported values to row ${logNewRow} (Log sheet)`);
+    console.log(`[PL] Successfully imported values to row ${logNewRow} in Log Sheet`);
   }
   catch (e) {
-    Logger.log("Unable to fully process 'importArr' in Points Ledger Code");
+    Logger.log("[PL] Unable to fully process 'importArr'");
     throw e;
   }
 

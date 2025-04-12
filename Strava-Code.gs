@@ -53,13 +53,13 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
 
 function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   if (getCurrentUserEmail_() !== MCRUN_EMAIL) {
-    throw Error("Please switch to the McRUN account before continuing");
+    throw Error("[PL] Please switch to the McRUN account before continuing");
   }
 
   // Check if Strava activity stored
   let activity = checkForExistingStrava_(row);
   if (activity) {
-    Logger.log(`Strava activity found in log for row ${row}!`);
+    Logger.log(`[PL] Strava activity found in log for row ${row}!`);
     return activity;
   }
 
@@ -159,7 +159,7 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
   const activity = getStravaActivity_(fromTimestamp, toTimestamp);
 
   if (!activity) {
-    Logger.log(`No Strava activity has been found for the run that occured on ${submissionTimestamp}`);
+    Logger.log(`[PL] No Strava activity has been found for the run that occured on ${submissionTimestamp}`);
   }
 
   return activity;
