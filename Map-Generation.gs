@@ -98,7 +98,7 @@ function postToMakeWebhook_(postUrl, mapName) {
   };
 
   const response = UrlFetchApp.fetch(webhookUrl, options);
-  Logger.log("Make Webhook Response: " + response.getContentText());
+  Logger.log("[PL] Make Webhook Response: " + response.getContentText());
   return response;
 }
 
@@ -206,7 +206,7 @@ function uploadImageToBucket_(imageBlob, imageName) {
     return null;
   }
 
-  Logger.log('Image uploaded successfully!');
+  Logger.log('[PL] Image uploaded successfully!');
   return `https://storage.googleapis.com/${STORAGE_BUCKET_NAME}/${imageName}`; // Return the public URL
 }
 

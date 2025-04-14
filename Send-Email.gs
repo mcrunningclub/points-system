@@ -21,6 +21,7 @@ limitations under the License.
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
 const POINTS_EMAIL_SUBJECT = "Here's your post-run report! 🙌";
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
+const POST_RUN_TEMPLATE = "Post-Run Email (b)";
 
 const EMAIL_LEDGER_TARGETS = {
   'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
@@ -182,7 +183,7 @@ function emailMemberStats_(recipients, activity) {
 
 function emailReport_(email, memberStats) {
   // Create template to populate
-  const template = HtmlService.createTemplateFromFile('Post-Run Email');
+  const template = HtmlService.createTemplateFromFile(POST_RUN_TEMPLATE);
 
   // Get member's system preference to format email
   const useMetric = memberStats['USE_METRIC'];
@@ -206,11 +207,11 @@ function emailReport_(email, memberStats) {
 
   // Evaluate template and log message
   const filledTemplate = template.evaluate();
-  Logger.log(`Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
+  Logger.log(`[PL] Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
 
   MailApp.sendEmail(
     message = {
-      to: email,
+      //to: email,
       bcc: 'andrey.gonzalez@mail.mcgill.ca',
       name: EMAIL_SENDER_NAME,
       subject: POINTS_EMAIL_SUBJECT,
@@ -220,7 +221,7 @@ function emailReport_(email, memberStats) {
   );
 
   // Log confirmation for the sent email with member stats
-  const confirmation = `Stats email sent to ${email}`;
+  const confirmation = `[PL] Stats email sent to ${email}`;
   Logger.log(confirmation);
   return confirmation;
 }

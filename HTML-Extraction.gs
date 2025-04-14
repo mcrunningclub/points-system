@@ -11,7 +11,7 @@
 
 function extractTagsFromProjectFile() {
   // Get the content of email.html from the script project
-  const filename = 'Post-Run Email';
+  const filename = 'Post-Run Email (b)';
   var htmlContent = HtmlService.createHtmlOutputFromFile(filename).getContent();
 
   // Decode &lt; and &gt; back to < and >

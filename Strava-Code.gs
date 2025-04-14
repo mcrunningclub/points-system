@@ -48,7 +48,7 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  Apr 4, 2025
+ * @update  Apr 12, 2025
  */
 
 function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
@@ -181,7 +181,7 @@ function setStravaStats_(row, activity) {
   rangeToSet.setValues([extracted]);
 
   // Log success mesage
-  Logger.log(`Successfully imported Strava activity to row ${row} in Log Sheet!`);
+  Logger.log(`[PL] Successfully imported Strava activity to row ${row} in Log Sheet!`);
 }
 
 
