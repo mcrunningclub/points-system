@@ -47,6 +47,10 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'mapBlob': 'MAP_BLOB',
 }
 
+// constants for win-back email
+WINBACKEMAIL_SUBJECT = "We've missed you!";
+WINBACKEMAIL_TEMPLATE = "winbackemail";
+
 
 /** 
  * Testing Runtime Functions
@@ -244,23 +248,17 @@ function checkAndSendWinBackEmail() {
     throw new Error('Please switch to the McRUN Google Account before sending emails');
   }
 
-  // points spreadsheet (currently the test page)
-  const POINTS_SHEET = LEDGER_SS.getSheetByName("test2");
   // columns (0 indexed)
   const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;    // const EMAIL_COL = 0;
   const FNAME_COL = LEDGER_INDEX.FIRST_NAME - 1;   // const FNAME_COL = 2;
-  const LAST_RUN_COL = LEDGER_INDEX.LAST_RUN_DATE - 1;   // const LAST_RUN_COL = 8;
-
-  // ^-- I refactored your code to use the centralized indices of the sheet
-  // to future-proof any columns adds/removes
-
+  const LAST_RUN_COL = LEDGER_INDEX.LAST_RUN_DATE - 1;   // const LAST_RUN_COL = 10;
 
   // make date object for 2 weeks ago
   let dateThreshold = new Date();
   dateThreshold.setDate(dateThreshold.getDate() - 14);
 
   // get all data entries as 2d array (row, col)
-  let allMembers = POINTS_SHEET.getDataRange().getValues();
+  let allMembers = LEDGER_SHEET.getDataRange().getValues();
 
   // loop through member entries (questionable efficiency)
   // except first row which is the header
@@ -297,7 +295,7 @@ function checkAndSendWinBackEmail() {
  */
 function sendWinBackEmail_(name, email) {
   // set up email using template
-  const template = HtmlService.createTemplateFromFile('winbackemail');
+  const template = HtmlService.createTemplateFromFile(WINBACKEMAIL_TEMPLATE);
   template.FIRST_NAME = name;
   let filledTemplate = template.evaluate();
 
@@ -307,7 +305,7 @@ function sendWinBackEmail_(name, email) {
       message = {
         to: email,
         name: EMAIL_SENDER_NAME,
-        subject: "We've missed you!",
+        subject: WINBACKEMAIL_SUBJECT,
         htmlBody: filledTemplate.getContent()
       }
     );
