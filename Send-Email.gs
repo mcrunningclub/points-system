@@ -23,6 +23,10 @@ const POINTS_EMAIL_SUBJECT = "Here's your post-run report! 🙌";
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
 const POST_RUN_TEMPLATE = "Post-Run Email (b)";
 
+// constants for win-back email
+const WINBACKEMAIL_SUBJECT = "We've missed you!";
+const WINBACKEMAIL_TEMPLATE = "winbackemail";
+
 const EMAIL_LEDGER_TARGETS = {
   'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
   'USE_METRIC': LEDGER_INDEX.USE_METRIC,
@@ -46,10 +50,6 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'mapCid': 'MAP_CID',
   'mapBlob': 'MAP_BLOB',
 }
-
-// constants for win-back email
-WINBACKEMAIL_SUBJECT = "We've missed you!";
-WINBACKEMAIL_TEMPLATE = "winbackemail";
 
 
 /** 
@@ -157,7 +157,7 @@ function emailMemberStats_(recipients, activity) {
     const preferredStats = memberTotalStats['USE_METRIC'] ? metricStats : imperialStats;
 
     // Email report and log response
-    res.push(emailReport_(email, { ...memberTotalStats, ...preferredStats }));
+    res.push(emailPostRunReport_(email, { ...memberTotalStats, ...preferredStats }));
   }
 
   return res;
@@ -185,7 +185,7 @@ function emailMemberStats_(recipients, activity) {
 }
 
 
-function emailReport_(email, memberStats) {
+function emailPostRunReport_(email, memberStats) {
   // Create template to populate
   const template = HtmlService.createTemplateFromFile(POST_RUN_TEMPLATE);
 
@@ -215,7 +215,7 @@ function emailReport_(email, memberStats) {
 
   MailApp.sendEmail(
     message = {
-      //to: email,
+      to: email,
       bcc: 'andrey.gonzalez@mail.mcgill.ca',
       name: EMAIL_SENDER_NAME,
       subject: POINTS_EMAIL_SUBJECT,

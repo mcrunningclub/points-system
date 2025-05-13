@@ -147,7 +147,7 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  April 1, 2025
+ * @update  Apr 1, 2025
  */
 
 function getStravaStats_(submissionTimestamp, toTimestamp) {

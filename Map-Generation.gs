@@ -29,7 +29,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  April 4, 2025
+ * @update  Apr 4, 2025
  * 
  */
 
