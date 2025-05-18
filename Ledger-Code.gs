@@ -211,7 +211,6 @@ function findMemberInLedger_(emailToFind, ledger) {
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Apr 8, 2025
  * @update  Apr 12, 2025
- * 
  */
 
 function storeImportFromAttendanceSheet(importArr) {

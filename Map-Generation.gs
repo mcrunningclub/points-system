@@ -248,7 +248,6 @@ function getGSCAccessToken_(key) {
 }
 
 
-
 /**
  * Adds a Blob to a Google Cloud Storage bucket.
  *

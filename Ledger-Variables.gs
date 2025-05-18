@@ -130,9 +130,3 @@ function getFileById_(id) {
   return DriveApp.getFileById(id);
 }
 
-function extractPlaceholders() {
-  const str = STATS_EMAIL_OBJ.text;
-  const matches = [...str.matchAll(/{{(.*?)}}/g)].map(match => match[1]);
-  console.log([...new Set(matches)])
-}
-

@@ -3,10 +3,10 @@
  * 
  * Used to debug HTML file.
  * 
- * @author  [Andrey Gonzalez] (<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
+ * @author [Andrey Gonzalez] (<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
  * 
- * @date Apr 2, 2025
- * @update Apr 3, 2025
+ * @date  Apr 2, 2025
+ * @update  Apr 3, 2025
  */
 
 function extractTagsFromProjectFile() {
@@ -29,6 +29,11 @@ function extractTagsFromProjectFile() {
   Logger.log("Extracted Tags: " + JSON.stringify(unique));
 }
 
+function extractPlaceholders() {
+  const str = STATS_EMAIL_OBJ.text;
+  const matches = [...str.matchAll(/{{(.*?)}}/g)].map(match => match[1]);
+  console.log([...new Set(matches)])
+}
 
 function createInlineImage_(fileUrl, blobKey) {
   // Extract file id from url. 
@@ -49,7 +54,6 @@ function createInlineImage_(fileUrl, blobKey) {
  * Must updated subject line as needed.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
  */
 
 function saveDraftAsHtml() {

@@ -21,7 +21,7 @@ limitations under the License.
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
 const POINTS_EMAIL_SUBJECT = "Here's your post-run report! 🙌";
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
-const POST_RUN_TEMPLATE = "Post-Run Email (b)";
+const POST_RUN_TEMPLATE = "Post-Run Email";
 
 // constants for win-back email
 const WINBACKEMAIL_SUBJECT = "We've missed you!";

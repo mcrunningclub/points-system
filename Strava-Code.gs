@@ -39,7 +39,6 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
  * Return Strava activity in `row`. If Strava activity not found in `LOG_SHEET`,
  * call Strava API using `timestamp` as searching target.
  * 
- * 
  * @param {integer} [row = getValidLastRow(LOG_SHEET)]  Target row.
  *                                                      Defaults to last valid row in `LOG_SHEET`.
  * 
