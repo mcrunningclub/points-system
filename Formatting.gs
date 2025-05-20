@@ -20,14 +20,14 @@ limitations under the License.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Nov 28, 2023
- * @update  Mar 31, 2025
+ * @update  May 19, 2025
  */
 
 function sortTimestampByAscending() {
   const sheet = LOG_SHEET;
 
   // Sort timestamps in ascending order, without the header row
-  const range = sheet.getRange(2, 1, sheet.getLastRow(), sheet.getLastColumn());
+  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
   range.sort(3);
 }
 
