@@ -19,6 +19,40 @@ const TRIGGER_BASE_ID = 'stravaTriggerRow';
 const STRAVA_CHECK_MAX_TRIES = 3;
 const TRIGGER_FREQUENCE = 30;  // Minutes
 
+
+function doGet(e) {
+  // 1. Check if access is authorized with key
+  if (e.parameter.key !== getSecretWebKey_()) {
+    return ContentService.createTextOutput(addMsg("Unauthorized! Please verify key."));
+  }
+
+  // 2. Get 'rowNum' from URL and validate input
+  let rowNum = e.parameter.rowNum;
+  if (!rowNum || isNaN(rowNum)) {
+    return ContentService.createTextOutput(addMsg("Invalid or missing 'rowNum' parameter."));
+  }
+
+  // 3. Parse for row number
+  rowNum = parseInt(rowNum, 10);
+  Logger.log(`[PL] Received in 'doGet' row number: ${rowNum}`);
+
+  // 4. Run handler function and return output message
+  createNewStravaTrigger(rowNum);
+  return ContentService.createTextOutput(addMsg(`Trigger set for row ${rowNum}`));
+
+  /** Helper: get secret key in script properties */
+  function getSecretWebKey_() {
+    const property = 'WEB_APP_KEY';
+    return PropertiesService.getScriptProperties().getProperty(property);
+  }
+
+  /** Helper: append values of 'e' to 'msg' for debugging */
+  function addMsg(msg) {
+    return msg + '\n\n' + JSON.stringify(e);
+  }
+}
+
+
 function createNewStravaTrigger(row = getValidLastRow_(LOG_SHEET)) {
   const scriptProperties = PropertiesService.getScriptProperties();
 
@@ -39,7 +73,7 @@ function createNewStravaTrigger(row = getValidLastRow_(LOG_SHEET)) {
   const dataStr = JSON.stringify(triggerData);
 
   scriptProperties.setProperty(key, dataStr);
-  Logger.log(`Created new trigger '${key}', running every ${TRIGGER_FREQUENCE} min\n${dataStr}`);
+  Logger.log(`[PL] Created new trigger '${key}', running every ${TRIGGER_FREQUENCE} min\n${dataStr}`);
 }
 
 
@@ -114,9 +148,10 @@ function alertStravaNotFound_(rowNumber, tries) {
   MailApp.sendEmail({
     to: MCRUN_EMAIL,
     subject: `Strava Activity Not Found - Row #${rowNumber}`,
-    body: `The script attempted ${tries} times to find a Strava activity for row ${rowNumber}, but it was not found.
+    body: `
+    The script attempted ${tries} times to find a Strava activity for row ${rowNumber} in 'Points Ledger' unsuccessfully.
     
-    Please verify manually, and send post-run email once found.`
+    Please verify manually, and send post-run email to attendees once found.`
   });
 }
 

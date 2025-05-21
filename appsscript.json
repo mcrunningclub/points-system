@@ -1,7 +1,5 @@
 {
   "timeZone": "America/Toronto",
-  "exceptionLogging": "STACKDRIVER",
-  "runtimeVersion": "V8",
   "dependencies": {
     "libraries": [
       {
@@ -12,7 +10,9 @@
     ]
   },
   "webapp": {
-    "executeAs": "USER_ACCESSING",
-    "access": "ANYONE"
-  }
+    "executeAs": "USER_DEPLOYING",
+    "access": "MYSELF"
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
 }

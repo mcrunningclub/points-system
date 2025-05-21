@@ -30,7 +30,6 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * 
  * @date  Mar 27, 2025
  * @update  Apr 4, 2025
- * 
  */
 
 function createStravaMap_(activity, name) {

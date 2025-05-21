@@ -47,9 +47,9 @@ function reset_() {
 function safeReset() {
   const scriptProperties = PropertiesService.getScriptProperties();
   const key = 'IS_RESET_ALLOWED';
-  const isAllowed = scriptProperties.getProperty(key);
+  const isAllowed = !!scriptProperties.getProperty(key);
 
-  if (!!isAllowed) {
+  if (!isAllowed) {
     return Logger.log(`Please set '${key}' to true before trying again.`); // Log and exit
   }
 

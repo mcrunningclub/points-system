@@ -274,7 +274,7 @@ function checkAndSendWinBackEmail() {
 
       // send reminder email if needed
       if (lastRunAsDate < dateThreshold) {
-        sendReminderEmail_(member[FNAME_COL], member[EMAIL_COL]);
+        sendWinBackEmail_(member[FNAME_COL], member[EMAIL_COL]);
       }
     }
   }
