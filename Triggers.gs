@@ -90,7 +90,7 @@ function runStravaChecker() {
 
     if (isStravaFound(rowNumber)) {
       // If found, clean up trigger and data in script properties
-      cleanUpTrigger(key, triggerId);
+      cleanUpTrigger(key, triggerId, triggerData);
       Logger.log(`✅ Activity found for row ${rowNumber} after ${tries} tries`);
     }
     else if (tries <= STRAVA_CHECK_MAX_TRIES) {
@@ -100,8 +100,8 @@ function runStravaChecker() {
     }
     else {
       // Send email notification if limit is reached
-      cleanUpTrigger(key, triggerId);
-      alertStravaNotFound_(rowNumber, tries);
+      cleanUpTrigger(key, triggerId, triggerData);
+      alertTriggerStravaNotFound_(rowNumber, tries);
       Logger.log(`❌ Max tries reached for row ${rowNumber}, sending email and stopping checks`);
     }
   }
@@ -121,37 +121,56 @@ function runStravaChecker() {
   }
 
   /** Helper: remove trigger and data in script properties */
-  function cleanUpTrigger(key, triggerId) {
-    deleteTriggerById(triggerId);
+  function cleanUpTrigger(key, triggerId, triggerData) {
+    if (!deleteTriggerById(triggerId)) {
+      alertTriggerIdNotFound_(triggerId, triggerData);
+    }
+    // Delete property whether trigger is found or not
     scriptProperties.deleteProperty(key);
   }
 
   /** Helper: delete a trigger by ID */
   function deleteTriggerById(triggerId) {
     const triggers = ScriptApp.getProjectTriggers();
-    let isFound = false;
 
     for (let trigger of triggers) {
       if (trigger.getUniqueId() === triggerId) {
-        isFound = true;
         ScriptApp.deleteTrigger(trigger);
-        break;
+        Logger.log(`Trigger with id ${triggerId} deleted!`);
+        return true;
       }
     }
-    // Log success or throw error if not found
-    const raiseError = () => { throw new Error(`⚠️ Trigger with id ${triggerId} not found`) }
-    isFound ? Logger.log(`Trigger with id ${triggerId} deleted!`) : raiseError();
+
+    // Notify club of unidentified trigger
+    console.error(`Unable to find trigger with id #${triggerId}`);
+    return false;
   }
 }
 
-function alertStravaNotFound_(rowNumber, tries) {
+
+function alertTriggerIdNotFound_(triggerId, value) {
+  MailApp.sendEmail({
+    to: MCRUN_EMAIL,
+    subject: `Trigger id not found - Points Ledger Code`,
+    body: `
+    The script attempted to delete trigger with id ${triggerId} in 'Points Ledger'.
+
+    Properties service stored following value... Warning: values unrelated to trigger ${triggerId}.
+    
+    ${JSON.stringify(value)}
+    
+    Please verify manually, and update properties script if required.`.replace(/[ \t]{2,}/g, ''),
+  });
+}
+
+function alertTriggerStravaNotFound_(rowNumber, tries) {
   MailApp.sendEmail({
     to: MCRUN_EMAIL,
     subject: `Strava Activity Not Found - Row #${rowNumber}`,
     body: `
     The script attempted ${tries} times to find a Strava activity for row ${rowNumber} in 'Points Ledger' unsuccessfully.
     
-    Please verify manually, and send post-run email to attendees once found.`
+    Please verify manually, and send post-run email to attendees once found.`.replace(/[ \t]{2,}/g, ''),
   });
 }
 

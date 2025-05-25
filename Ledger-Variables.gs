@@ -27,10 +27,8 @@ const LOG_SHEET = LEDGER_SS.getSheetByName(LOG_SHEET_NAME);
 
 let LEDGER_DATA = null;
 
-function GET_LEDGER_() {
-  if (!LEDGER_DATA) {
-    LEDGER_DATA = getLedgerData_();
-  }
+const GET_LEDGER_ = () => {
+  LEDGER_DATA = LEDGER_DATA ?? getLedgerData_();
   return LEDGER_DATA;
 }
 
@@ -40,7 +38,7 @@ const GET_LOG_SHEET_ = () => {
   return (LOG_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LOG_SHEET_NAME);
 }
 
-const GET_LEDGER_SHEET_ = () => {
+const GET_LEDGER_SHEET = () => {
   return (LEDGER_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LEDGER_SHEET_NAME);
 }
 

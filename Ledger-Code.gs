@@ -69,15 +69,22 @@ function getSubmissionTimestamp_(row) {
  *  
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Sept 1, 2024
- * @update  Mar 23, 2025
+ * @update  May 25, 2025
  */
 
 function getValidLastRow_(sheet) {
-  let lastRow = sheet.getLastRow();
+  const startRow = 1;   // Do not skip header row here
+  const numRow = sheet.getLastRow();
 
-  while (sheet.getRange(lastRow, 1).getValue() == "") {
-    lastRow = lastRow - 1;
+  // Fetch all values
+  const values = sheet.getSheetValues(startRow, 1, numRow, 1);
+  let lastRow = values.length;
+
+  // Loop through the values in reverse order
+  while (values[lastRow - 1][0] === "") {
+    lastRow--;
   }
+
   return lastRow;
 }
 
@@ -130,7 +137,7 @@ function getLogCell_(row, column) {
  */
 
 function getLedgerData_(numCols = LEDGER_COL_COUNT) {
-  const pointSheet = GET_LEDGER_SHEET_();
+  const pointSheet = GET_LEDGER_SHEET();
 
   // Define dimensions of sheet data
   const startCol = 1;

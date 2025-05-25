@@ -71,7 +71,7 @@ function buildPostUrl_(polyline, imgSize = "580x420") {
   const propertyStore = PropertiesService.getScriptProperties();
   const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
 
-  const googleCloudMapId = 'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
+  const googleCloudMapId = '30aa339d7a505f10aca29579' //'bfeadd271a2b0a58';  //'2ff6c54f4dd84b16';
   const pathColor = '0xEB4E3D';
 
   const queryObj = {
