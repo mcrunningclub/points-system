@@ -69,8 +69,7 @@ function getStravaActivity_(fromTimestamp, toTimestamp) {
   };
 
   const endpoint = ACTIVITIES_ENDPOINT;
-  const response = callStravaAPI_(endpoint, queryObj);
-  return response[0];  // Assume first activity is the target
+  return callStravaAPI_(endpoint, queryObj);    // Returns a list of Objects
 }
 
 

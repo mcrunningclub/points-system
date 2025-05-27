@@ -155,13 +155,46 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
   const fromTimestamp = getUnixEpochTimestamp_(submissionTimestamp) - gracePeriod;
 
   // Get activity with time constraints
-  const activity = getStravaActivity_(fromTimestamp, toTimestamp);
-
-  if (!activity) {
+  const activities = getStravaActivity_(fromTimestamp, toTimestamp);
+  if (!activities) {
     Logger.log(`[PL] No Strava activity has been found for the run that occured on ${submissionTimestamp}`);
   }
 
-  return activity;
+  return activities[0] || null;   // Assume first activity is the target (for now)
+}
+
+
+/**
+ * Get Strava activity by level for multiple activities recorded at similar datetimes.
+ * 
+ * This helps sending the correct post-run email stats to attendee's level.
+ * 
+ * @param {string} level  Date representation of headrun timestamp.
+ * @param {Object[]} activities  Array of strava activities occuring at similar times
+ * @param {Object[]} levelHeadrunners  Array of headrunner scheduled for 'level' headrun.
+ * 
+ * @return {Object}  Strava activity with appended mapUrl
+ *
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  May 27, 2025
+ * @update  May 27, 2025
+ */
+
+function getActivityByLevel(level, activities, levelHeadrunners = []) {
+  // Get level and if multiple activities, return activity by distance ascending.
+  // E.g. activities = [{distance: 7km}, {distance: 3km}] -> Easy run = 3km, Intermediate = 7km
+  // @see https://developers.strava.com/docs/reference/#api-models-DetailedActivity
+
+  // I can also cross-reference with headrunner's Strava id and activities `athlete` property
+  // Or with the activity's title `name` if level mentionned e.g. 'Easy Run!'
+  switch(level.toLowerCase()){
+    case 'beginner' : return activities[smallestDistance]
+    case 'easy' : return activities[secondSmallest]
+    case 'intermediate' : return activities[secondLongest]
+    case 'advanced' : return activities[longest]
+    default : null
+  }
 }
 
 
