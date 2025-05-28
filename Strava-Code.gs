@@ -16,9 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/';
-const ACTIVITIES_ENDPOINT = 'athlete/activities';
-
 const LOG_TARGETS = {
   'id': LOG_INDEX.STRAVA_ACTIVITY_ID,      // (long)
   'name': LOG_INDEX.STRAVA_ACTIVITY_NAME,  // (string)
@@ -47,7 +44,7 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  Apr 12, 2025
+ * @update  May 28, 2025
  */
 
 function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
@@ -55,44 +52,38 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
     throw Error("[PL] Please switch to the McRUN account before continuing");
   }
 
-  // Check if Strava activity stored
+  // Check if Strava activity stored in sheet
   let activity = checkForExistingStrava_(row);
   if (activity) {
     Logger.log(`[PL] Strava activity found in log for row ${row}!`);
     return activity;
   }
 
-  // No activity stored, call Strava API instead
-  // Get timestamp from row to use as filter
   const timestamp = getSubmissionTimestamp_(row);
-  const offset = 1000 * 60 * 60 * 2;    // 2 hours in seconds
-  const limit = Math.floor((timestamp.getTime() + offset) / 1000);
+  const level = getRowLevel_(row);
+  
+  activity = popLevelRunFromExtras_(level);
+  if (!activity || activity.length === 0) {
+    // No activity stored, call Strava API instead
+    // Get timestamp from row to use as filter
+    const offset = 1000 * 60 * 60 * 2;    // 2 hours in seconds
+    const limit = Math.floor((timestamp.getTime() + offset) / 1000);
 
-  // Save stats to log sheet and store map to Drive.
-  // Filename is timestamp. Download url added to `activity` obj
-  activity = getStravaStats_(timestamp, limit);
-
-  // If activity available, add mapUrl and save in log sheet
-  if (activity) {
-    const formattedTS = Utilities.formatDate(timestamp, TIMEZONE, "EEE-d-MMM-yyyy-k\'h\'mm");
-    const filename = `headrun-map-${formattedTS}.png`
-    const mapBlob = createStravaMap_(activity, filename);
-
-    // Upload image to Google Cloud Storage and get sharing link
-    activity['mapUrl'] = uploadImageToBucket_(mapBlob, filename);
-    setStravaStats_(row, activity);
+    // Get all activities within timestamp range
+    // For multiple activities, make educated guess and get by distance 
+    const activities = getStravaStats_(timestamp, limit);
+    activity = getActivityByLevel(level, activities);
   }
 
+  // Add mapUrl to activity if none found
+  // Filename is timestamp and map store in Firebase storage
+  if (!activity['mapUrl']) {
+    activity = createAndAppendMap_(timestamp, activity);
+  }
+
+  // Set it to current row and return activity
+  setStravaStats_(row, activity);
   return activity;
-}
-
-
-function getAllActivities() {
-  const startRow = 92;
-  const endRow = 94;
-  for (let row = startRow; row <= endRow; row++) {
-    findAndStoreStravaActivity(row);
-  }
 }
 
 
@@ -135,6 +126,16 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
 }
 
 
+function getRowLevel_(row) {
+  const sheet = GET_LOG_SHEET_();
+  const eventTitle = sheet.getRange(row, LOG_INDEX.EVENT).getValue();
+
+  const levelRegex = /\b(beginner|easy|intermediate|advanced)\b/i;
+  const matches = eventTitle.match(levelRegex);
+  return matches[1] || null;
+}
+
+
 /**
  * Get Strava activity of most recent head run submission.
  * 
@@ -146,7 +147,7 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Mar 27, 2025
- * @update  Apr 1, 2025
+ * @update  May 28, 2025
  */
 
 function getStravaStats_(submissionTimestamp, toTimestamp) {
@@ -160,7 +161,7 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
     Logger.log(`[PL] No Strava activity has been found for the run that occured on ${submissionTimestamp}`);
   }
 
-  return activities[0] || null;   // Assume first activity is the target (for now)
+  return activities;
 }
 
 
@@ -169,16 +170,15 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
  * 
  * This helps sending the correct post-run email stats to attendee's level.
  * 
- * @param {string} level  Date representation of headrun timestamp.
- * @param {Object[]} activities  Array of strava activities occuring at similar times
- * @param {Object[]} levelHeadrunners  Array of headrunner scheduled for 'level' headrun.
+ * @param {string} level  Level of headrun (e.g. 'easy', 'intermediate').
+ * @param {Object[]} activities  Array of Strava activities occurring at similar times.
+ * @param {Object[]} levelHeadrunners  Array of headrunner objects for this level.
  * 
- * @return {Object}  Strava activity with appended mapUrl
- *
+ * @return {Object|null}  Best-matching Strava activity, or null if none.
+ * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
  * @date  May 27, 2025
- * @update  May 27, 2025
+ * @update  May 28, 2025
  */
 
 function getActivityByLevel(level, activities, levelHeadrunners = []) {
@@ -188,12 +188,113 @@ function getActivityByLevel(level, activities, levelHeadrunners = []) {
 
   // I can also cross-reference with headrunner's Strava id and activities `athlete` property
   // Or with the activity's title `name` if level mentionned e.g. 'Easy Run!'
-  switch(level.toLowerCase()){
-    case 'beginner' : return activities[smallestDistance]
-    case 'easy' : return activities[secondSmallest]
-    case 'intermediate' : return activities[secondLongest]
-    case 'advanced' : return activities[longest]
-    default : null
+  if (!activities || activities.length === 0) return null;
+  
+  // // Convert levelHeadrunners to a set of athlete IDs for quick lookup
+  // const headrunnerIds = new Set(levelHeadrunners.map(headrunner => headrunner.athleteId));
+  
+  // // Step 1: Try to match activities by athlete ID
+  // let matchingActivities = activities.filter(act => headrunnerIds.has(act.athlete?.id));
+  
+  // if (matchingActivities.length === 0) {
+  //   // Step 2: Fallback to all activities
+  //   matchingActivities = [...activities];
+  // }
+
+  // Step 3: Sort activities by distance (in meters)
+  const matchingActivities = activities;
+  matchingActivities.sort((a, b) => a.distance - b.distance);
+
+  // Find match according to distance, and store extras
+  const match = getActivityByDistance(level, matchingActivities);
+  const extraActivities = matchingActivities.filter(act => act !== match);
+  extraActivities.length > 0 ? storeExtraActivities(extraActivities) : null;
+
+  return match;
+
+  /** Helper: assume that distance increases according to level */
+  function getActivityByDistance(level, matchingActivities) {
+    switch (level.toLowerCase()) {
+      case 'beginner':
+      case 'easy': return matchingActivities[0]; // Shortest distance
+      case 'intermediate': return matchingActivities[Math.min(1, matchingActivities.length - 1)]; // Second shortest
+      case 'advanced': return matchingActivities[matchingActivities.length - 1]; // Longest
+      default: return matchingActivities[0] || null;
+    }
+  }
+
+  // Save extra activities (excluding the selected one) in properties
+  // Instead of calling Strava API multiple times
+  function storeExtraActivities(extraActivities) {
+    const scriptProps = PropertiesService.getScriptProperties();
+    let currentExtras = scriptProps.getProperty(SCRIPT_PROPERTY_KEYS.extraStrava);
+
+    // Combine current extras with input if applicable
+    const toStore = currentExtras ? {...currentExtras, ...extraActivities} : extraActivities;
+    scriptProps.setProperty(SCRIPT_PROPERTY_KEYS.extraStrava, JSON.stringify(toStore));
+  }
+}
+
+
+/**
+ * Remove a specific Strava activity from the extra activities stored for a level.
+ * 
+ * @param {string} level  The level of headrun (e.g., 'easy', 'intermediate').
+ * @param {number} activityId  The Strava activity ID to remove.
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date May 28, 2025
+ */
+function removeActivityFromExtra_(activityId) {
+  if (!activityId) return;
+  
+  const scriptProps = PropertiesService.getScriptProperties();
+  const propKey = SCRIPT_PROPERTY_KEYS.extraStrava;
+
+  const jsonString = scriptProps.getProperty(propKey);
+  if (!jsonString) return; // No stored activities
+  
+  try {
+    const extraActivities = JSON.parse(jsonString);
+    
+    // Filter out the activity with the given ID
+    const updatedActivities = extraActivities.filter(act => act.id !== activityId);
+    
+    // Update or remove the property if empty
+    if (updatedActivities.length > 0) {
+      scriptProps.setProperty(propKey, JSON.stringify(updatedActivities));
+    } else {
+      scriptProps.deleteProperty(propKey);
+    }
+
+  } catch (e) {
+    Logger.log(`Error removing activity ID ${activityId}: ${e}`);
+
+  }
+}
+
+
+/**
+ * Retrieve extra Strava activities saved from previous API call.
+ * 
+ * @return {Object[]}  Extra Strava activities, or empty array if none found.
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date May 28, 2025
+ */
+
+function popLevelRunFromExtras_(level) {
+  const extraActivities = getExtraActivities();
+  const match = getActivityByLevel(level, extraActivities);
+
+  // Clean up store and return match
+  match ? removeActivityFromExtra_(match.id) : null;
+  return match;
+
+  function getExtraActivities() {
+    const scriptProps = PropertiesService.getScriptProperties();
+    const jsonString = scriptProps.getProperty(SCRIPT_PROPERTY_KEYS.extraStrava);
+    return JSON.parse(jsonString) || [];
   }
 }
 

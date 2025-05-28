@@ -19,6 +19,29 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 
 /**
+ * Create and store PNG image of run route from Strava activity.
+ * 
+ * @param {Date} timestamp  Recorded timestamp of event.
+ * @param {Object} activity  Strava activity.
+ * @return {Objecy}  Strava activity with appended map url
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  May 28, 2025
+ * @update  May 28, 2025
+ */
+function createAndAppendMap_(timestamp, activity) {
+  const formattedTS = Utilities.formatDate(timestamp, TIMEZONE, "EEE-d-MMM-yyyy-k\'h\'mm");
+  const filename = `headrun-map-${formattedTS}.png`
+  const mapBlob = createStravaMap_(activity, filename);
+
+  // Upload image to Google Cloud Storage and get sharing link
+  activity['mapUrl'] = uploadImageToBucket_(mapBlob, filename);
+  return activity;
+}
+
+
+/**
  * Create a PNG image of run route to include in email from polyline.
  * 
  * Google Static Map API + Make Automations.
@@ -31,7 +54,6 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @date  Mar 27, 2025
  * @update  Apr 4, 2025
  */
-
 function createStravaMap_(activity, name) {
   // Extract polyline and save headrun route as map
   const polyline = activity['map']['polyline'] ?? activity['map']['summary_polyline'];
@@ -60,7 +82,6 @@ function createStravaMap_(activity, name) {
  * @date  Mar 27, 2025
  * @update  Apr 4, 2025
  */
-
 function saveMapForRun_(polyline, name) {
   const postUrl = buildPostUrl_(polyline, "580x420");
   return postToMakeWebhook_(postUrl, name);
@@ -116,7 +137,6 @@ function postToMakeWebhook_(postUrl, mapName) {
  * @date  Dec 1, 2024
  * @update  Mar 27, 2025
  */
-
 function saveMapAsBlob_(polyline, timestamp) {
   if (!polyline) {
     return Logger.log('Map cannot be created: no polyline found for this activity');

@@ -24,6 +24,8 @@ THIS FILE HAS BEEN MODIFIED BY ANDREY GONZALEZ AS FOLLOWING:
 - Improved documentation and inline comments
 */
 
+const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/';
+const ACTIVITIES_ENDPOINT = 'athlete/activities';
 
 /**
  * Reset the authorization state, so that it can be re-tested.
@@ -68,8 +70,7 @@ function getStravaActivity_(fromTimestamp, toTimestamp) {
     'include_all_efforts' : true 
   };
 
-  const endpoint = ACTIVITIES_ENDPOINT;
-  return callStravaAPI_(endpoint, queryObj);    // Returns a list of Objects
+  return callStravaAPI_(queryObj);    // Returns array of Strava activities
 }
 
 
@@ -166,10 +167,10 @@ function authCallback_(request) {
  * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 7, 2024
- * @update  Mar 23, 2025
+ * @update  May 28, 2025
  */
 
-function callStravaAPI_(endpoint, query_object = {}) {
+function callStravaAPI_(query_object = {}) {
   // Set up the service
   const service = getStravaService_();
 
@@ -187,7 +188,7 @@ function callStravaAPI_(endpoint, query_object = {}) {
   Logger.log('[PL] App has access.');
 
   // Get API endpoint
-  endpoint = STRAVA_BASE_URL + endpoint;
+  const endpoint = STRAVA_BASE_URL + ACTIVITIES_ENDPOINT;
   const query_string = queryObjToString_(query_object);
 
   const headers = {

@@ -53,6 +53,7 @@ const SCRIPT_PROPERTY_KEYS = {
   clientSecret: 'CLIENT_SECRET',
   googleMapAPI: 'GOOGLE_MAPS_API_KEY',
   googleCloudKey: 'GOOGLE_CLOUD_KEY',
+  extraStrava : 'EXTRA_STRAVA'
 };
 
 
