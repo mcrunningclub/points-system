@@ -1,7 +1,7 @@
 /*
 Copyright 2024 Charles Villegas (for McGill Students Running Club)
 
-Copyright 2025 Andrey Gonzalez (for McGill Students Running Club)
+Copyright 2024-25 Andrey Gonzalez (for McGill Students Running Club)
 
 Copyright 2025 Mona Liu (for McGill Students Running Club)
 
@@ -19,9 +19,23 @@ limitations under the License.
 */
 
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
-const POINTS_EMAIL_SUBJECT = "Here's your post-run report! 🙌";
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
 const POST_RUN_TEMPLATE = "Post-Run Email";
+
+const SUBJECT_LINES_ARR = [
+  "Here's your post-run report! 🙌",
+  "Proof you're unstoppable 💥",
+  "You showed up. And crushed it 👟",
+  "Run complete. Let's see the results 🎉",
+  "Here's how you crushed it today 💪"
+];
+
+// Randomly select a subject line at run-time
+const POINTS_EMAIL_SUBJECT = (() => {
+  let i = Math.floor(Math.random() * SUBJECT_LINES_ARR.length);
+  return SUBJECT_LINES_ARR[i];
+})();
+
 
 // constants for win-back email
 const WINBACKEMAIL_SUBJECT = "We've missed you!";

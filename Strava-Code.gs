@@ -1,7 +1,7 @@
 /*
 Copyright 2024 Jikael Gagnon (for McGill Students Running Club)
 
-Copyright 2025 Andrey Gonzalez (for McGill Students Running Club)
+Copyright 2024-25 Andrey Gonzalez (for McGill Students Running Club)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
  * @date  Mar 27, 2025
  * @update  May 28, 2025
  */
-
 function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   if (getCurrentUserEmail_() !== MCRUN_EMAIL) {
     throw Error("[PL] Please switch to the McRUN account before continuing");
@@ -73,6 +72,10 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
     // For multiple activities, make educated guess and get by distance 
     const activities = getStravaStats_(timestamp, limit);
     activity = getActivityByLevel(level, activities);
+  }
+
+  if (!activity) {
+    throw Error (`No Strava activity found for ${timestamp} (${level})`);
   }
 
   // Add mapUrl to activity if none found

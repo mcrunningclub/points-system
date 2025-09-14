@@ -156,10 +156,12 @@ function alertTriggerIdNotFound_(triggerId, value) {
     The script attempted to delete trigger with id ${triggerId} in 'Points Ledger'.
 
     Properties service stored following value... Warning: values unrelated to trigger ${triggerId}.
-    
+      
     ${JSON.stringify(value)}
+      
+    Please verify manually, and update properties script if required.
     
-    Please verify manually, and update properties script if required.`.replace(/[ \t]{2,}/g, ''),
+    (Updated: June 15, 2025)`.replace(/[ \t]{2,}/g, '').trim(),
   });
 }
 
@@ -170,7 +172,9 @@ function alertTriggerStravaNotFound_(rowNumber, tries) {
     body: `
     The script attempted ${tries} times to find a Strava activity for row ${rowNumber} in 'Points Ledger' unsuccessfully.
     
-    Please verify manually, and send post-run email to attendees once found.`.replace(/[ \t]{2,}/g, ''),
+    Please verify manually, and send post-run email to attendees once found.
+
+    (Updated: June 15, 2025)`.replace(/[ \t]{2,}/g, '').trim(),
   });
 }
 

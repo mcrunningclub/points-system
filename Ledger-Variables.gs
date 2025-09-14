@@ -16,7 +16,7 @@ limitations under the License.
 
 /** SHEET CONSTANTS */
 const LEDGER_SS = SpreadsheetApp.getActiveSpreadsheet();
-const LEDGER_SS_ID = '1DwmnZgLftSqegfsoFA5fekuT0sosgCntVMmTylbj8o4';
+const LEDGER_SS_ID = '1sar-Pmfb_Nar0Lc9u8-rXyllLvQMqBFlSwolCoHX-_4';
 
 const LEDGER_SHEET_NAME = 'Member Points';
 const LEDGER_SHEET = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
