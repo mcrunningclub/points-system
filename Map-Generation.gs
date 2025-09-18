@@ -19,20 +19,59 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
 
 
 /**
+ * Create the PNG image of run route from Strava activity and print 
+ * public bucket url. This allows to manually generate the map 
+ * if the polyline is already stored in the sheet.
+ * 
+ * @param {number} row  GSheet row to target.
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ * @date  Sep 17, 2025
+ * @update  Sep 17, 2025
+ */
+function createMapForRow(row = 4){
+  const activity = checkForExistingStrava_(row);
+  if(!activity) throw Error("No activity or polyline detected");
+
+  const timestamp = getSubmissionTimestamp_(row);
+  activity['map'] = extractPolyline(activity['map']);
+
+  // Store created map and print url
+  const updated = createAndAppendMap_(timestamp, activity);
+
+  Logger.log(updated?.["mapUrl"]);
+
+  /** Since `JSON.parse` will not work with values stored in
+   *  GSheet col `MAP_POLYLINE`, we use a regex to extract it instead */
+  function extractPolyline(str) {
+    // Case 1: polyline is delimited by comma, i.e. another property to its right
+    const regexUntilComma = /summary_polyline=(.*)\,/;
+
+    // Case 2: polyline is delimited by end closing bracket `}`
+    const regexUntilBracket = /summary_polyline=(.*)\}/;
+
+    // Return polyline for both cases without delimeter (comma or bracket)
+    const match = regexUntilComma.exec(str) ?? regexUntilBracket.exec(str);
+    return match ? {'summary_polyline': match[1]} : null;
+  }
+}
+
+/**
  * Create and store PNG image of run route from Strava activity.
  * 
  * @param {Date} timestamp  Recorded timestamp of event.
  * @param {Object} activity  Strava activity.
- * @return {Objecy}  Strava activity with appended map url
+ * @return {Object}  Strava activity with appended map url
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  May 28, 2025
- * @update  May 28, 2025
+ * @update  Sep 17, 2025
  */
 function createAndAppendMap_(timestamp, activity) {
-  const formattedTS = Utilities.formatDate(timestamp, TIMEZONE, "EEE-d-MMM-yyyy-k\'h\'mm");
-  const filename = `headrun-map-${formattedTS}.png`
+  const formattedTS = Utilities.formatDate(timestamp, TIMEZONE, "EEE-d-MMM-yyyy-k-mm-ss");
+  const filename = `headrun-map-${formattedTS}.png`;
   const mapBlob = createStravaMap_(activity, filename);
 
   // Upload image to Google Cloud Storage and get sharing link
@@ -173,12 +212,15 @@ function saveMapAsBlob_(polyline, timestamp) {
 
 
 function testCloudUpload() {
-  const fileId = "14csoxHqwHnnN7KFhsEgi5o55x1Sajvbh";
+  const fileId = "1XhuP7peNPTWCnNhs3MGC-IzGNi0Yu-7X";   //"14csoxHqwHnnN7KFhsEgi5o55x1Sajvbh";
   const blob = DriveApp.getFileById(fileId).getBlob();
 
-  const time = Utilities.formatDate(new Date(), TIMEZONE, "EEE-d-MMM-yyyy-k\'h\'mm");
+  const time = Utilities.formatDate(new Date(), TIMEZONE, "EEE-d-MMM-yyyy-k-mm-ss");
   const imageName = "headrun-map-" + time + '.png';
 
+  console.log(imageName);
+  return;
+  
   try {
     const imageUrl = uploadImageToBucket_(blob, imageName);
     Logger.log("Uploaded image URL: " + imageUrl);

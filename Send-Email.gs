@@ -94,6 +94,15 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_
 }
 
 
+function isEmailSendingAllowed() {
+  const store = PropertiesService.getScriptProperties();
+  const isSendAllowed = store.getProperty(SCRIPT_PROPERTY_KEYS.isSendAllowed);
+  if (isSendAllowed === 'false') {
+    throw new Error('[PL] Sending emails is currently toggled off. Please reset to continue.');
+  }
+}
+
+
 /**
  * Function to send email to each member updating them on their points
  *
@@ -106,7 +115,7 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_
  * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 5, 2024
- * @update  Apr 3, 2025
+ * @update  Sep 18, 2025
  */
 
 function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logSheet)) {
@@ -114,6 +123,8 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logS
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
     throw new Error('[PL] Please switch to the McRUN Google Account before sending emails');
   }
+
+  isEmailSendingAllowed();    // throws error if not allowed
 
   // Get attendees from log
   const attendees = getAttendeesInLog_(row);
