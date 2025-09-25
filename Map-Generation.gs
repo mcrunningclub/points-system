@@ -30,7 +30,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @date  Sep 17, 2025
  * @update  Sep 17, 2025
  */
-function createMapForRow(row = 5){
+function createMapForRow(row){
   const activity = checkForExistingStrava_(row);
   if(!activity) throw Error("No activity or polyline detected");
 

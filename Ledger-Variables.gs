@@ -54,7 +54,8 @@ const SCRIPT_PROPERTY_KEYS = {
   googleMapAPI: 'GOOGLE_MAPS_API_KEY',
   googleCloudKey: 'GOOGLE_CLOUD_KEY',
   extraStrava : 'EXTRA_STRAVA',
-  isSendAllowed : 'IS_SEND_ALLOWED'
+  isSendAllowed : 'IS_SEND_ALLOWED',
+  isResetAllowed: 'IS_RESET_ALLOWED,'
 };
 
 

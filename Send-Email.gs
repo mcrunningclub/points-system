@@ -76,7 +76,6 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'run_date' : 'RUN_DATE',
   'level' : 'LEVEL',
   'headrunners' : 'HEADRUNNERS',
-
   //'mapCid': 'MAP_CID',
   //'mapBlob': 'MAP_BLOB',
 }
@@ -230,10 +229,6 @@ function emailMemberStats_(recipients, activity) {
   }
 }
 
-function testME() {
-  const res = Utilities.formatDate(new Date, TIMEZONE, "yyyy-MM-d");
-  Logger.log(res);
-}
 
 function emailPostRunReport_(email, memberStats) {
   // Create template to populate
@@ -274,7 +269,7 @@ function emailPostRunReport_(email, memberStats) {
   MailApp.sendEmail(
     message = {
       to: email,
-      bcc: 'andreysebastian10.g@gmail.com', //'andrey.gonzalez@mail.mcgill.ca',
+      bcc: 'andrey.gonzalez@mail.mcgill.ca',
       name: EMAIL_SENDER_NAME,
       subject: POINTS_EMAIL_SUBJECT_LINE,
       replyTo: MCRUN_EMAIL,
@@ -287,7 +282,6 @@ function emailPostRunReport_(email, memberStats) {
   Logger.log(confirmation);
   return confirmation;
 }
-
 
 
 /**
