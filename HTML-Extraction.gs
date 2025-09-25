@@ -11,7 +11,7 @@
 
 function extractTagsFromProjectFile() {
   // Get the content of email.html from the script project
-  const filename = 'Post-Run Email (b)';
+  const filename = 'Post-Run Email v2';
   var htmlContent = HtmlService.createHtmlOutputFromFile(filename).getContent();
 
   // Decode &lt; and &gt; back to < and >
@@ -48,6 +48,48 @@ function createInlineImage_(fileUrl, blobKey) {
 }
 
 
+function saveFullDraftHtml() {
+  const drafts = Gmail.Users.Drafts.list("me").drafts;
+  if (!drafts || !drafts.length) return;
+
+  const index = 2;
+
+  const draftId = drafts[index].id;
+  const draft = Gmail.Users.Drafts.get("me", draftId, { format: "full" });
+
+  let htmlContent = "";
+
+  function findHtmlPart(part) {
+    if (part.mimeType === "text/html" && part.body && part.body.data) {
+      if (Array.isArray(part.body.data)) {
+        // Case: already an array of character codes
+        return String.fromCharCode.apply(null, part.body.data);
+      } else {
+        // Case: still base64url string
+        const b64 = part.body.data.replace(/-/g, '+').replace(/_/g, '/');
+        const decoded = Utilities.base64Decode(b64);
+        return Utilities.newBlob(decoded).getDataAsString("UTF-8");
+      }
+    }
+    if (part.parts) {
+      for (const p of part.parts) {
+        const result = findHtmlPart(p);
+        if (result) return result;
+      }
+    }
+    return null;
+  }
+
+  htmlContent = findHtmlPart(draft.message.payload);
+
+  if (htmlContent) {
+    DriveApp.createFile(`full-draft-${index}.html`, htmlContent, MimeType.HTML);
+  } else {
+    Logger.log("No HTML part found.");
+  }
+}
+
+
 /**
  * Generate html version of email found in draft using its subject line.
  * 
@@ -57,7 +99,7 @@ function createInlineImage_(fileUrl, blobKey) {
  */
 
 function saveDraftAsHtml() {
-  const subjectLine = 'Here\'s your post-run report! 🙌';
+  const subjectLine = "Report Test 🙌" //'Here\'s your post-run report! 🙌';
   generateHtmlFromDraft_(subjectLine);
 
   function generateHtmlFromDraft_(subjectLine) {
@@ -144,7 +186,7 @@ function getGmailTemplateFromDrafts_(subjectLine = DRAFT_SUBJECT_LINE){
     var inlineImagesObj = {}
     //Regexp to search for all string positions 
     var regexp = RegExp('img data-surl=\"cid:', 'g');
-    var indices = htmlBody.matchAll(regexp)
+    var indices = htmlBody.matchAll(regexp);
 
     //Iterate through all matches
     var i = 0;

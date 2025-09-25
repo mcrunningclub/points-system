@@ -109,6 +109,14 @@ function getAttendeesInLog_(row) {
   return thisLog[attendeesCol];
 }
 
+function getEventDateAndLevel_(row) {
+  const rawString = getLogCell_(row, LOG_INDEX.EVENT);
+  return {
+    'date' : rawString.match(/^[^\n]*\n(.*)$/i)[1],
+    'level' : rawString.match(/(?:Headrun)\s+(\w+)/i)[1],
+  }
+}
+
 function getMapUrlInRow_(row) {
   return getLogCell_(row, LOG_INDEX.MAP_URL) || "";
 }

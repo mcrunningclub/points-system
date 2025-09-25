@@ -42,11 +42,10 @@ const prettyLog_ = (...msg) => console.log(msg.join('\n'));
  * @return {Object}  Strava activity.
  *
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
  * @date  Mar 27, 2025
  * @update  May 28, 2025
  */
-function findAndStoreStravaActivity(row = 4  /*getValidLastRow_(LOG_SHEET)*/) {
+function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   if (getCurrentUserEmail_() !== MCRUN_EMAIL) {
     throw Error("[PL] Please switch to the McRUN account before continuing");
   }
@@ -101,7 +100,6 @@ function findAndStoreStravaActivity(row = 4  /*getValidLastRow_(LOG_SHEET)*/) {
  * @return {Object}  Previously stored Strava activity.
  *
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
  * @date  Apr 1, 2025
  * @update  Apr 1, 2025
  */

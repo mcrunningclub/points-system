@@ -30,7 +30,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @date  Sep 17, 2025
  * @update  Sep 17, 2025
  */
-function createMapForRow(row = 4){
+function createMapForRow(row = 5){
   const activity = checkForExistingStrava_(row);
   if(!activity) throw Error("No activity or polyline detected");
 
@@ -39,7 +39,6 @@ function createMapForRow(row = 4){
 
   // Store created map and print url
   const updated = createAndAppendMap_(timestamp, activity);
-
   Logger.log(updated?.["mapUrl"]);
 
   /** Since `JSON.parse` will not work with values stored in
@@ -67,11 +66,13 @@ function createMapForRow(row = 4){
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  May 28, 2025
- * @update  Sep 17, 2025
+ * @update  Sep 18, 2025
  */
 function createAndAppendMap_(timestamp, activity) {
-  const formattedTS = Utilities.formatDate(timestamp, TIMEZONE, "EEE-d-MMM-yyyy-k-mm-ss");
-  const filename = `headrun-map-${formattedTS}.png`;
+  const formatName = (str) => str.replace(/\s+/g, '-') || "";
+  const formatTimestamp = (ts) => Utilities.formatDate(ts, TIMEZONE, "EEE-d-MMM-yyyy-k-mm-ss");
+
+  const filename = `headrun-${ formatName(activity?.name) }map-${ formatTimestamp(timestamp)}.png`;
   const mapBlob = createStravaMap_(activity, filename);
 
   // Upload image to Google Cloud Storage and get sharing link

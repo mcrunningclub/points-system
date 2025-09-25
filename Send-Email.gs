@@ -20,7 +20,19 @@ limitations under the License.
 
 /** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
-const POST_RUN_TEMPLATE = "Post-Run Email";
+const POST_RUN_TEMPLATE = "Post-Run Email v2";
+
+
+/** HAPPY EMOJI */
+// https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWxjeXc0OGYybW9iNjcydTU3bmV0b3FiNjF0aGhxY2dmMjA2dGltMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/Xh6ntwxEnNZ6oWf4uS/giphy.gif
+// https://media1.giphy.com/media/v1.Y2lkPWE4MDUxNTEwczFmMjF4Nmp4NWxxb21xbW84cGU4aGMxcjFleWh6aTRhcHB2eDdtMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/aNQG4ugoNPxnL5n08C/giphy.gif
+
+/** SAD EMOJI */
+// https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3lxMXdtdGdoejcwMzNjb2JuN2Rrc3E5bm54emFiMmtwdjZnNHZwcCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tZU3bZ1Ypbg5pzjhCD/giphy.gif
+
+//https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3lmMG1yZjZ5d3ExY3c0NXphOHFvZzFodGdmYzk0dHU3ZDBrZ2FyOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohrypGmT9bFovUzmM/giphy.gif
+
+// https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2IxczcyaXUwajIzc2l0ZnM4bjdybW5ibW4zejhsZDJka3Y5bWMwMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/23fsBjmnPUCzLNKxJl/giphy.gif
 
 const SUBJECT_LINES_ARR = [
   "Here's your post-run report! 🙌",
@@ -31,7 +43,7 @@ const SUBJECT_LINES_ARR = [
 ];
 
 // Randomly select a subject line at run-time
-const POINTS_EMAIL_SUBJECT = (() => {
+const POINTS_EMAIL_SUBJECT_LINE = (() => {
   let i = Math.floor(Math.random() * SUBJECT_LINES_ARR.length);
   return SUBJECT_LINES_ARR[i];
 })();
@@ -61,8 +73,12 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'mapUrl': 'MAP_URL',
   'id': 'ACTIVITY_ID',
   'points': 'POINTS',
-  'mapCid': 'MAP_CID',
-  'mapBlob': 'MAP_BLOB',
+  'run_date' : 'RUN_DATE',
+  'level' : 'LEVEL',
+  'headrunners' : 'HEADRUNNERS',
+
+  //'mapCid': 'MAP_CID',
+  //'mapBlob': 'MAP_BLOB',
 }
 
 
@@ -115,7 +131,7 @@ function isEmailSendingAllowed() {
  * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Nov 5, 2024
- * @update  Sep 18, 2025
+ * @update  Sep 25, 2025
  */
 
 function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logSheet)) {
@@ -139,6 +155,11 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logS
 
   // Otherwise send email with extracted stats
   activityStats['points'] = getEventPointsInRow_(row);
+
+  // Append headrun details
+  const { date, level } = getEventDateAndLevel_(row);
+  activityStats['run_date'] = date;
+  activityStats['level'] = level;
 
   // Extract email and store in arr
   const recipientArr =
@@ -209,20 +230,32 @@ function emailMemberStats_(recipients, activity) {
   }
 }
 
+function testME() {
+  const res = Utilities.formatDate(new Date, TIMEZONE, "yyyy-MM-d");
+  Logger.log(res);
+}
 
 function emailPostRunReport_(email, memberStats) {
   // Create template to populate
   const template = HtmlService.createTemplateFromFile(POST_RUN_TEMPLATE);
+  
+  // Add subject line
+  template.SUBJECT_LINE = POINTS_EMAIL_SUBJECT_LINE;
 
   // Get member's system preference to format email
   const useMetric = memberStats['USE_METRIC'];
-  template.USE_METRIC = memberStats['USE_METRIC'];
+  template.USE_METRIC = useMetric;
 
   // Populate member's general stats
   template.FIRST_NAME = memberStats['FIRST_NAME'];
   template.TPOINTS = memberStats['TPOINTS'];
   template.TWEEKS = memberStats['TWEEKS'];
-  template.TRUNS = memberStats['TRUNS']
+  template.TRUNS = memberStats['TRUNS'];
+
+  // Populate head run details
+  template.RUN_DATE = memberStats['RUN_DATE'];
+  template.LEVEL = memberStats['LEVEL'];
+  template.HEADRUNNERS = memberStats['HEADRUNNERS'];
 
   // Populate activity units
   template.DISTANCE = memberStats['DISTANCE'];
@@ -241,9 +274,9 @@ function emailPostRunReport_(email, memberStats) {
   MailApp.sendEmail(
     message = {
       to: email,
-      bcc: 'andrey.gonzalez@mail.mcgill.ca',
+      bcc: 'andreysebastian10.g@gmail.com', //'andrey.gonzalez@mail.mcgill.ca',
       name: EMAIL_SENDER_NAME,
-      subject: POINTS_EMAIL_SUBJECT,
+      subject: POINTS_EMAIL_SUBJECT_LINE,
       replyTo: MCRUN_EMAIL,
       htmlBody: filledTemplate.getContent(),
     }
