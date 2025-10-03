@@ -185,7 +185,7 @@ function callStravaAPI_(query_object = {}) {
   }
 
   // Authorization completed.
-  Logger.log('[PL] App has access.');
+  logAsPL_('App has access.', callStravaAPI_.name);
 
   // Get API endpoint
   const endpoint = STRAVA_BASE_URL + ACTIVITIES_ENDPOINT;

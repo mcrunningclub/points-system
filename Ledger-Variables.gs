@@ -53,7 +53,7 @@ const SCRIPT_PROPERTY_KEYS = {
   clientSecret: 'CLIENT_SECRET',
   googleMapAPI: 'GOOGLE_MAPS_API_KEY',
   googleCloudKey: 'GOOGLE_CLOUD_KEY',
-  extraStrava : 'EXTRA_STRAVA',
+  extraStrava : 'EXTRA_STRAVA_ARR',
   isSendAllowed : 'IS_SEND_ALLOWED',
   isResetAllowed: 'IS_RESET_ALLOWED,'
 };
@@ -75,7 +75,7 @@ const LEDGER_INDEX = {
   EMAIL: 1,
   FEE_STATUS: 2,
   FIRST_NAME: 3,
-  LAST_NAME: 4,
+  LAST_REGISTERED: 4,
   FULL_NAME: 5,
   EMAIL_ALLOWED : 6,
   USE_METRIC : 7,
@@ -87,7 +87,7 @@ const LEDGER_INDEX = {
   TOTAL_RUNS: 13,
   TOTAL_DISTANCE: 14,
   TOTAL_ELEVATION: 15,
-  // Cols+ store event-specific points
+  // Col 16+ store event-specific points
 }
 
 /** LEDGER SHEET COL SIZE (WITHOUT EVENT-SPECIFIC POINTS COL) */
@@ -98,20 +98,21 @@ const LEDGER_COL_COUNT = Object.keys(LEDGER_INDEX).length;
 const LOG_INDEX = {
   IMPORT_TIMESTAMP: 1,
   EVENT: 2,
-  EVENT_TIMESTAMP: 3,
-  ATTENDEE_NAME_EMAIL: 4,
-  DISTANCE_ESTIMATED: 5,
-  EVENT_POINTS: 6,
-  EMAIL_STATUS: 7,
-  STRAVA_ACTIVITY_ID: 8,
-  STRAVA_ACTIVITY_NAME: 9,
-  DISTANCE_STRAVA: 10,
-  MOVING_TIME: 11,
-  PACE: 12,
-  MAX_SPEED: 13,
-  ELEVATION: 14,
-  MAP_POLYLINE: 15,
-  MAP_URL: 16,
+  HEADRUNNERS: 3,
+  EVENT_TIMESTAMP: 4,
+  ATTENDEE_NAME_EMAIL: 5,
+  DISTANCE_ESTIMATED: 6,
+  EVENT_POINTS: 7,
+  EMAIL_STATUS: 8,
+  STRAVA_ACTIVITY_ID: 9,
+  STRAVA_ACTIVITY_NAME: 10,
+  DISTANCE_STRAVA: 11,
+  MOVING_TIME: 12,
+  PACE: 13,
+  MAX_SPEED: 14,
+  ELEVATION: 15,
+  MAP_POLYLINE: 16,
+  MAP_URL: 17,
 }
 
 
@@ -131,3 +132,7 @@ function getFileById_(id) {
   return DriveApp.getFileById(id);
 }
 
+function logAsPL_(msg, funcName = "", useLogger = true) {
+  const message = `[PL#${funcName}] ${msg}`;
+  useLogger ? Logger.log(message) : console.log(message);
+}

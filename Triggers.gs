@@ -34,7 +34,7 @@ function doGet(e) {
 
   // 3. Parse for row number
   rowNum = parseInt(rowNum, 10);
-  Logger.log(`[PL] Received in 'doGet' row number: ${rowNum}`);
+  Logger.log(`[PL#doGet] Received in 'doGet' row number: ${rowNum}`);
 
   // 4. Run handler function and return output message
   createNewStravaTrigger(rowNum);
@@ -48,7 +48,7 @@ function doGet(e) {
 
   /** Helper: append values of 'e' to 'msg' for debugging */
   function addMsg(msg) {
-    return msg + '\n\n' + JSON.stringify(e);
+    return msg + '\n\n' + JSON.stringify(e);  // Logs SECRET KEY!!
   }
 }
 
@@ -73,7 +73,7 @@ function createNewStravaTrigger(row = getValidLastRow_(LOG_SHEET)) {
   const dataStr = JSON.stringify(triggerData);
 
   scriptProperties.setProperty(key, dataStr);
-  Logger.log(`[PL] Created new trigger '${key}', running every ${TRIGGER_FREQUENCE} min\n${dataStr}`);
+  logAsPL_(`Created new trigger '${key}', running every ${TRIGGER_FREQUENCE} min\n${dataStr}`);
 }
 
 
@@ -87,8 +87,9 @@ function runStravaChecker() {
 
     const triggerData = JSON.parse(allProps[key]);
     const { rowNumber, tries, triggerId } = triggerData;
+    console.log(`Trigger data`, triggerData);
 
-    if (isStravaFound(rowNumber)) {
+    if (isStravaFound(rowNumber) && isEmailsSent(rowNumber)) {
       // If found, clean up trigger and data in script properties
       cleanUpTrigger(key, triggerId, triggerData);
       Logger.log(`✅ Activity found for row ${rowNumber} after ${tries} tries`);
@@ -96,7 +97,8 @@ function runStravaChecker() {
     else if (tries <= STRAVA_CHECK_MAX_TRIES) {
       // Limit not reach, check again and increment 'tries'
       incrementTries(key, triggerData);
-      sendStatsEmail();   // This checks for Strava activity and sends post-run email if success
+      Logger.log(`Incremented tries for Strava trigger. Now sending stats email`);
+      sendStatsEmail(GET_LOG_SHEET_(), rowNumber);   // This checks for Strava activity and sends post-run email if success
     }
     else {
       // Send email notification if limit is reached
@@ -110,6 +112,12 @@ function runStravaChecker() {
   function isStravaFound(row) {
     const sheet = GET_LOG_SHEET_();
     const value = sheet.getRange(row, LOG_INDEX.STRAVA_ACTIVITY_ID).getValue();
+    return value.toString().trim() != '';
+  }
+
+  function isEmailsSent(row) {
+    const sheet = GET_LOG_SHEET_();
+    const value = sheet.getRange(row, LOG_INDEX.EMAIL_STATUS).getValue();
     return value.toString().trim() != '';
   }
 

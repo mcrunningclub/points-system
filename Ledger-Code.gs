@@ -125,10 +125,16 @@ function getEventPointsInRow_(row) {
   return getLogCell_(row, LOG_INDEX.EVENT_POINTS) || 0;
 }
 
+function getHeadrunnersInRow_(row) {
+  return getLogCell_(row, LOG_INDEX.HEADRUNNERS) || "";
+}
+
 function getLogCell_(row, column) {
   const sheet = GET_LOG_SHEET_();
   return sheet.getRange(row, column).getValue();
 }
+
+
 
 
 /**
@@ -230,7 +236,8 @@ function findMemberInLedger_(emailToFind, ledger) {
 
 function storeImportFromAttendanceSheet(importArr) {
   const logSheet = GET_LOG_SHEET_();
-  Logger.log('[PL] Processing following import...');
+  const funcName = storeImportFromAttendanceSheet.name;
+  logAsPL_('Processing following import...', funcName);
   Logger.log(importArr);
 
   const logNewRow = getValidLastRow_(logSheet) + 1;
@@ -240,16 +247,16 @@ function storeImportFromAttendanceSheet(importArr) {
     const packageNumCols = importArr[0].length;
 
     // Print number of rows and columns
-    console.log(`[PL] Row count: ${packageNumRows}\tCol count: ${packageNumCols}`);
+    logAsPL_(`Row count: ${packageNumRows}\tCol count: ${packageNumCols}`, funcName, false);
     
     // Now set import as-if (processing occured in Attendance Sheet)
     logSheet.getRange(logNewRow, 1, packageNumRows, packageNumCols).setValues(importArr);
 
     // Log success message
-    console.log(`[PL] Successfully imported values to row ${logNewRow} in Log Sheet`);
+    logAsPL_(`Successfully imported values to row ${logNewRow} in Log Sheet`, funcName, false);
   }
   catch (e) {
-    Logger.log("[PL] Unable to fully process 'importArr'");
+    logAsPL_("Unable to fully process 'importArr'", funcName);
     throw e;
   }
 

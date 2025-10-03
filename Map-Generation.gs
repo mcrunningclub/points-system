@@ -30,7 +30,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @date  Sep 17, 2025
  * @update  Sep 17, 2025
  */
-function createMapForRow(row){
+function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
   const activity = checkForExistingStrava_(row);
   if(!activity) throw Error("No activity or polyline detected");
 
@@ -158,7 +158,7 @@ function postToMakeWebhook_(postUrl, mapName) {
   };
 
   const response = UrlFetchApp.fetch(webhookUrl, options);
-  Logger.log("[PL] Make Webhook Response: " + response.getContentText());
+  logAsPL_(`Make Webhook Response: ${response.getContentText()}`, postToMakeWebhook_.name);
   return response;
 }
 
@@ -268,7 +268,7 @@ function uploadImageToBucket_(imageBlob, imageName) {
     return null;
   }
 
-  Logger.log('[PL] Image uploaded successfully!');
+  logAsPL_('Image uploaded successfully!', uploadImageToBucket_.name);
   return `https://storage.googleapis.com/${STORAGE_BUCKET_NAME}/${imageName}`; // Return the public URL
 }
 

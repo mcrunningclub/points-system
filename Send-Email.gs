@@ -22,19 +22,7 @@ limitations under the License.
 const EMAIL_SENDER_NAME = "McGill Students Running Club";
 const POST_RUN_TEMPLATE = "Post-Run Email v2";
 
-
-/** HAPPY EMOJI */
-// https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMWxjeXc0OGYybW9iNjcydTU3bmV0b3FiNjF0aGhxY2dmMjA2dGltMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/Xh6ntwxEnNZ6oWf4uS/giphy.gif
-// https://media1.giphy.com/media/v1.Y2lkPWE4MDUxNTEwczFmMjF4Nmp4NWxxb21xbW84cGU4aGMxcjFleWh6aTRhcHB2eDdtMSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/aNQG4ugoNPxnL5n08C/giphy.gif
-
-/** SAD EMOJI */
-// https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ3lxMXdtdGdoejcwMzNjb2JuN2Rrc3E5bm54emFiMmtwdjZnNHZwcCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tZU3bZ1Ypbg5pzjhCD/giphy.gif
-
-//https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3lmMG1yZjZ5d3ExY3c0NXphOHFvZzFodGdmYzk0dHU3ZDBrZ2FyOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3ohrypGmT9bFovUzmM/giphy.gif
-
-// https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExb2IxczcyaXUwajIzc2l0ZnM4bjdybW5ibW4zejhsZDJka3Y5bWMwMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/23fsBjmnPUCzLNKxJl/giphy.gif
-
-const SUBJECT_LINES_ARR = [
+const SUBJECT_LINE_ARR = [
   "Here's your post-run report! 🙌",
   "Proof you're unstoppable 💥",
   "You showed up. And crushed it 👟",
@@ -42,14 +30,19 @@ const SUBJECT_LINES_ARR = [
   "Here's how you crushed it today 💪"
 ];
 
+const HIDDEN_PREHEADER_ARR = [
+  "Consistent work pays off {{FIRST_NAME}}! Your {{POINTS}} points await. See you next time!",
+
+]
+
 // Randomly select a subject line at run-time
 const POINTS_EMAIL_SUBJECT_LINE = (() => {
-  let i = Math.floor(Math.random() * SUBJECT_LINES_ARR.length);
-  return SUBJECT_LINES_ARR[i];
+  let i = Math.floor(Math.random() * SUBJECT_LINE_ARR.length);
+  return SUBJECT_LINE_ARR[i];
 })();
 
 
-// constants for win-back email
+// Constants for win-back email
 const WINBACKEMAIL_SUBJECT = "We've missed you!";
 const WINBACKEMAIL_TEMPLATE = "winbackemail";
 
@@ -76,8 +69,6 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'run_date' : 'RUN_DATE',
   'level' : 'LEVEL',
   'headrunners' : 'HEADRUNNERS',
-  //'mapCid': 'MAP_CID',
-  //'mapBlob': 'MAP_BLOB',
 }
 
 
@@ -109,7 +100,7 @@ function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_
 }
 
 
-function isEmailSendingAllowed() {
+function isEmailSendingAllowed_() {
   const store = PropertiesService.getScriptProperties();
   const isSendAllowed = store.getProperty(SCRIPT_PROPERTY_KEYS.isSendAllowed);
   if (isSendAllowed === 'false') {
@@ -134,23 +125,26 @@ function isEmailSendingAllowed() {
  */
 
 function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logSheet)) {
+  const funcName = sendStatsEmail.name;
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
-    throw new Error('[PL] Please switch to the McRUN Google Account before sending emails');
+    throw new Error(`[PL#${sendStatsEmail.name}] Please switch to the McRUN Google Account before sending emails`);
   }
 
-  isEmailSendingAllowed();    // throws error if not allowed
+  isEmailSendingAllowed_();    // throws error if not allowed
+  logAsPL_(`Email can be sent! Continuing execution now...`, funcName);
 
   // Get attendees from log
   const attendees = getAttendeesInLog_(row);
   if (!attendees) {
-    Logger.log(`[PL] No recipients found for row: ${row}`);
+    logAsPL_(`No recipients found for row: ${row}`, funcName);
     return null;
   }
 
   // Get activity and add headrun points from log
   const activityStats = findAndStoreStravaActivity(row);
   if (!activityStats) return;   // Cannot send email without stats
+  logAsPL_(`Found activity stats!`, funcName);
 
   // Otherwise send email with extracted stats
   activityStats['points'] = getEventPointsInRow_(row);
@@ -160,21 +154,43 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logS
   activityStats['run_date'] = date;
   activityStats['level'] = level;
 
-  // Extract email and store in arr
-  const recipientArr =
-    attendees.split('\n').reduce((acc, entry) => {
-      const [, email] = entry.split(':');
-      acc.push(email);
-      return acc;
-    }, []
-    );
+  // Add headrunners
+  const headrunnerInfo = splitInfo(getHeadrunnersInRow_(row));
+  activityStats['headrunners'] = headrunnerInfo?.names.join(', ').replace(/,([^,]*)$/, ' & $1');
 
+  // Extract email and store in arr
+  const recipientArr = splitInfo(attendees)?.emails;
+  const copyRecipientArr = headrunnerInfo?.emails;
+
+  logAsPL_(`Now trying to execute '${emailMemberStats_.name}'...`, funcName);
   const returnStatus = emailMemberStats_(recipientArr, activityStats);
 
   // Print log and save return status of `emailMemberStats`
   console.log(activityStats);
   logStatus_(returnStatus, logSheet, row);
-  Logger.log(`[PL] Successfully executed 'sendStatsEmail' and logged messages in sheet`);
+  logAsPL_("Successfully executed and logged messages in sheet", funcName);
+
+  /** Helper to get names and emails formatted as `[Bob Burger|Bob B.]:bob@mail.com`*/
+   function splitInfo(infoAsStr) {
+    const splitByNewline = infoAsStr.split('\n');
+
+    // First try spliting
+    try{
+      const res = splitByNewline.reduce((acc, entry) => {
+        const [name, email=""] = entry.split(':');
+        acc.names.push(name.trim());
+        acc.emails.push(email.trim());
+        return acc;
+      }, {names: [], emails: []});
+      
+      return res || {};
+    }
+    catch(e) {
+      logAsPL_(`Could not split headrunners by ':'; returning names only`);
+      logAsPL_(`Catch error: ${e.message}`);
+      return { names: splitByNewline, emails: [] };
+    }
+  }
 }
 
 
@@ -264,8 +280,7 @@ function emailPostRunReport_(email, memberStats) {
 
   // Evaluate template and log message
   const filledTemplate = template.evaluate();
-  Logger.log(`[PL] Now constructing email with ${useMetric ? 'metric' : 'imperial'} units.`);
-
+  
   MailApp.sendEmail(
     message = {
       to: email,
@@ -278,8 +293,8 @@ function emailPostRunReport_(email, memberStats) {
   );
 
   // Log confirmation for the sent email with member stats
-  const confirmation = `[PL] Stats email sent to ${email}`;
-  Logger.log(confirmation);
+  const confirmation = `Stats email sent to ${email} with ${useMetric ? 'metric' : 'imperial'} units.`;
+  logAsPL_(confirmation, emailPostRunReport_.name);
   return confirmation;
 }
 
