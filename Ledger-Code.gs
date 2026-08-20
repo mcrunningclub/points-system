@@ -48,11 +48,11 @@ function newSubmission() {
  */
 
 function getLatestSubmissionTimestamp_() {
-  return getSubmissionTimestamp_(getValidLastRow_(GET_LOG_SHEET_()));
+  return getSubmissionTimestamp_(getValidLastRow_(GET_LOG_SHEET()));
 }
 
 function getSubmissionTimestamp_(row) {
-  const sheet = GET_LOG_SHEET_();
+  const sheet = GET_LOG_SHEET();
   const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
   const timestamp = sheet.getRange(row, timestampCol).getValue();
   return new Date(timestamp);
@@ -95,14 +95,14 @@ function getLatestLog_() {
 }
 
 function getLogInRow_(row = getValidLastRow_(LOG_SHEET)) {
-  const sheet = GET_LOG_SHEET_();
+  const sheet = GET_LOG_SHEET();
   const numCols = sheet.getLastColumn();
   return sheet.getSheetValues(row, 1, 1, numCols)[0];
 }
 
 function getAttendeesInLog_(row) {
   // Get log attendees using stored index
-  const attendeesCol = LOG_INDEX.ATTENDEE_NAME_EMAIL - 1;
+  const attendeesCol = LOG_INDEX.ATTENDEES - 1;
   const thisLog = getLogInRow_(row);
 
   // Return log attendees
@@ -130,7 +130,7 @@ function getHeadrunnersInRow_(row) {
 }
 
 function getLogCell_(row, column) {
-  const sheet = GET_LOG_SHEET_();
+  const sheet = GET_LOG_SHEET();
   return sheet.getRange(row, column).getValue();
 }
 
@@ -235,7 +235,7 @@ function findMemberInLedger_(emailToFind, ledger) {
  */
 
 function storeImportFromAttendanceSheet(importArr) {
-  const logSheet = GET_LOG_SHEET_();
+  const logSheet = GET_LOG_SHEET();
   const funcName = storeImportFromAttendanceSheet.name;
   logAsPL_('Processing following import...', funcName);
   Logger.log(importArr);

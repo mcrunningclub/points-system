@@ -31,6 +31,15 @@ const LOG_TARGETS = {
 // Simple logging of multi-line message. Improves readability in code.
 const prettyLog_ = (...msg) => console.log(msg.join('\n'));
 
+function runMe() {
+  //const ROW = 72;
+  //findAndStoreStravaActivity(ROW);
+  //createMapForRow(ROW);
+
+  Logger.log(`Now sending email to row ${ROW}...`);
+  Utilities.sleep(4 * 1000)   // Grace period
+  //sendStatsEmail(LOG_SHEET, ROW);
+};
 
 /**
  * Return Strava activity in `row`. If Strava activity not found in `LOG_SHEET`,
@@ -65,18 +74,20 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   if (!activity || Object.keys(activity).length === 0) {
     // No activity stored, call Strava API instead
     // Get timestamp from row to use as filter
-    const offset = 1000 * 60 * 60 * 2;    // 2 hours in seconds
+    const offset = 1000 * 60 * 60 * 3;    // 3 hours in seconds
     const limit = Math.floor((timestamp.getTime() + offset) / 1000);
 
     // Get all activities within timestamp range
     // For multiple activities, make educated guess and get by distance 
     const activities = getStravaStats_(timestamp, limit);
     activity = getActivityByLevel(level, activities);
+
+    if (!activity) {
+      throw Error (`No Strava activity found for ${timestamp} (${level})`);
+    }
   }
 
-  if (!activity) {
-    throw Error (`No Strava activity found for ${timestamp} (${level})`);
-  }
+  // Successfully found Strava Activity
   logAsPL_(`Found a Strava activity to append to row #${row}!`, funcName);
 
   // Add mapUrl to activity if none found
@@ -109,7 +120,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
  */
 
 function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
-  const sheet = GET_LOG_SHEET_();
+  const sheet = GET_LOG_SHEET();
   const startCol = LOG_INDEX.STRAVA_ACTIVITY_ID;
   const endCol = LOG_INDEX.MAP_URL;
 
@@ -132,7 +143,7 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
 
 
 function getRowLevel_(row) {
-  const sheet = GET_LOG_SHEET_();
+  const sheet = GET_LOG_SHEET();
   const eventTitle = sheet.getRange(row, LOG_INDEX.EVENT).getValue();
 
   const levelRegex = /\b(beginner|easy|intermediate|advanced)\b/i;
@@ -175,66 +186,58 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
 
 /**
  * Get Strava activity by level for multiple activities recorded at similar datetimes.
+ * Try matching name of activity with level, or by distance otherwise.
  * 
  * This helps sending the correct post-run email stats to attendee's level.
  * 
+ * @see https://developers.strava.com/docs/reference/#api-models-DetailedActivity
+ * 
  * @param {string} level  Level of headrun (e.g. 'easy', 'intermediate').
  * @param {Object[]} activities  Array of Strava activities occurring at similar times.
- * @param {Object[]} levelHeadrunners  Array of headrunner objects for this level.
  * 
  * @return {Object|null}  Best-matching Strava activity, or null if none.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  May 27, 2025
- * @update  Sep 28, 2025
+ * @update  Oct 5, 2025
+ * 
+ * ```js
+ * const activities = [{name: 'Headrun Easy', distance: 7km}, {name: 'Morning run - Intermediate', distance: 3km}];
+ * console.log(getActivityByLevel('Easy', activities))   // {name: 'Headrun Easy', distance: 7km}
+ * ```
  */
 
-function getActivityByLevel(level, activities, levelHeadrunners = []) {
-  // Get level and if multiple activities, return activity by distance ascending.
-  // E.g. activities = [{distance: 7km}, {distance: 3km}] -> Easy run = 3km, Intermediate = 7km
-  // @see https://developers.strava.com/docs/reference/#api-models-DetailedActivity
-
-  // I can also cross-reference with headrunner's Strava id and activities `athlete` property
-  // Or with the activity's title `name` if level mentionned e.g. 'Easy Run!'
+function getActivityByLevel(level, activities) {
   if (!activities || activities.length === 0) return null;
-  
-  // // Convert levelHeadrunners to a set of athlete IDs for quick lookup
-  // const headrunnerIds = new Set(levelHeadrunners.map(headrunner => headrunner.athleteId));
-  
-  // // Step 1: Try to match activities by athlete ID
-  // let matchingActivities = activities.filter(act => headrunnerIds.has(act.athlete?.id));
-  
-  // if (matchingActivities.length === 0) {
-  //   // Step 2: Fallback to all activities
-  //   matchingActivities = [...activities];
-  // }
 
-  // Step 3: Sort activities by distance (in meters)
-  const matchingActivities = activities;
-  logAsPL_(`Now trying to sort 'activities'`, getActivityByLevel.name);
-  console.log(matchingActivities);
+  logAsPL_(`Now trying to match activity for level '${level}'...`, getActivityByLevel.name);
+  console.log(activities);
 
-  // First try to match by level in name
-  //let match = matchActivityByLevel(level.name);    // FIX!!!
-  // //if (!match) {
-  //   matchingActivities.sort((a, b) => a.distance - b.distance);
-    
-  //   // Find match according to distance
-  //   match = getActivityByDistance(level, matchingActivities);
-  // }
+  // First try to match by level in name, then try by distance
+  const match = matchActivityByLevel(level, activities) ?? matchActivityByDistance(level, activities);
 
-  // Find match according to distance
-  matchingActivities.sort((a, b) => a.distance - b.distance);
-  const match = getActivityByDistance(level, matchingActivities);
-
-  // Store extra activities
-  const extraActivities = matchingActivities.filter(act => act !== match);
-  extraActivities.length > 0 ? storeExtraActivities(extraActivities) : null;
+  // Store extra activities (if applicable)
+  const extraActivities = activities.filter(act => act !== match);
+  extraActivities.length > 0 ? storeExtraActivities(extraActivities) : console.log('No extras found!');
 
   return match;
 
-  /** Helper: assume that distance increases according to level */
-  function getActivityByDistance(level, matchingActivities) {
+  /** Helper 1: Strava activity contains level in name property */
+  function matchActivityByLevel(level, matchingActivities){
+    // If level contains 'easy' or 'beginner', search together because headrunners
+    // sometimes label easy runs as beginner runs
+    const regex = new RegExp(`${/beginner|easy/i.test(level) ?  "beginner|easy" : level}`, 'i');
+
+    // Return activity if its name contains the target level, or undefined for no matches
+    return matchingActivities.find(act => regex.test(act?.name));
+  }
+
+
+  /** Helper 2: assume that distance increases according to level */
+  function matchActivityByDistance(level, matchingActivities) {
+    // First sort by distance before matching
+    matchingActivities.sort((a, b) => a.distance - b.distance);
+
     switch (level.toLowerCase()) {
       case 'beginner':
       case 'easy': return matchingActivities[0]; // Shortest distance
@@ -244,20 +247,6 @@ function getActivityByLevel(level, activities, levelHeadrunners = []) {
     }
   }
 
-  function matchActivityByLevel(level){
-    if(/[beginner|easy]/.test(level)) {
-      return level;
-    }
-    else if(/[intermediate]/.test(level)) {
-      return level;
-    }
-    else if(/[advanced]/.test(level)) {
-      return level;
-    }
-    else {
-      return null;
-    }
-  }
 
   // Save extra activities (excluding the selected one) in properties
   // Instead of calling Strava API multiple times
@@ -276,7 +265,6 @@ function getActivityByLevel(level, activities, levelHeadrunners = []) {
     }
   }
 }
-
 
 /**
  * Remove a specific Strava activity from the extra activities stored for a level.
@@ -311,7 +299,6 @@ function removeActivityFromExtra_(activityId) {
 
   } catch (e) {
     Logger.log(`Error removing activity ID ${activityId}: ${e}`);
-
   }
 }
 
@@ -344,7 +331,7 @@ function popLevelRunFromExtras_(level) {
 
 
 function setStravaStats_(row, activity) {
-  const sheet = GET_LOG_SHEET_();
+  const sheet = GET_LOG_SHEET();
   const statsMap = Object.entries(LOG_TARGETS);
 
   // Get range from Strava Account to Map Polyline

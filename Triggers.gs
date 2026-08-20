@@ -17,7 +17,7 @@ limitations under the License.
 const TRIGGER_FUNC = runStravaChecker.name;
 const TRIGGER_BASE_ID = 'stravaTriggerRow';
 const STRAVA_CHECK_MAX_TRIES = 3;
-const TRIGGER_FREQUENCE = 30;  // Minutes
+const TRIGGER_FREQUENCE = 45;  // Minutes
 
 
 function doGet(e) {
@@ -98,7 +98,7 @@ function runStravaChecker() {
       // Limit not reach, check again and increment 'tries'
       incrementTries(key, triggerData);
       Logger.log(`Incremented tries for Strava trigger. Now sending stats email`);
-      sendStatsEmail(GET_LOG_SHEET_(), rowNumber);   // This checks for Strava activity and sends post-run email if success
+      sendStatsEmail(GET_LOG_SHEET(), rowNumber);   // This checks for Strava activity and sends post-run email if success
     }
     else {
       // Send email notification if limit is reached
@@ -110,13 +110,13 @@ function runStravaChecker() {
 
   /** Helper: check if Strava activity already logged */
   function isStravaFound(row) {
-    const sheet = GET_LOG_SHEET_();
+    const sheet = GET_LOG_SHEET();
     const value = sheet.getRange(row, LOG_INDEX.STRAVA_ACTIVITY_ID).getValue();
     return value.toString().trim() != '';
   }
 
   function isEmailsSent(row) {
-    const sheet = GET_LOG_SHEET_();
+    const sheet = GET_LOG_SHEET();
     const value = sheet.getRange(row, LOG_INDEX.EMAIL_STATUS).getValue();
     return value.toString().trim() != '';
   }
@@ -153,6 +153,29 @@ function runStravaChecker() {
     console.error(`Unable to find trigger with id #${triggerId}`);
     return false;
   }
+}
+
+
+/**
+ * Removes all Strava triggers in ScriptApp.
+ *
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * @date  Nov 16, 2025
+ * @update  Nov 16, 2025
+ */
+
+function deleteStravaTriggers() {
+  const triggers = ScriptApp.getProjectTriggers();
+
+  triggers.forEach(trigger => {
+    const funcName = trigger.getHandlerFunction();
+    if (funcName == TRIGGER_FUNC) {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log(`Deleted Strava trigger with id '${trigger.getUniqueId()}'`);
+    }
+  });
+
+  Logger.log(`Deleted all Strava triggers successfully!`);
 }
 
 

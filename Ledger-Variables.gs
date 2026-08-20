@@ -14,40 +14,83 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/** SHEET CONSTANTS */
+/**
+ * Ledger spreadsheet (entire file) object
+ */
 const LEDGER_SS = SpreadsheetApp.getActiveSpreadsheet();
+
+/**
+ * ID for the ledger spreadsheet (entire file)
+ */
 const LEDGER_SS_ID = '1sar-Pmfb_Nar0Lc9u8-rXyllLvQMqBFlSwolCoHX-_4';
 
+/**
+ * Name of the ledger sheet
+ */
 const LEDGER_SHEET_NAME = 'Member Points';
+
+/**
+ * Ledger sheet object
+ */
 const LEDGER_SHEET = LEDGER_SS.getSheetByName(LEDGER_SHEET_NAME);
 
+/**
+ * Name for event log sheet
+ */
 const LOG_SHEET_NAME = 'Event Log';
+
+/**
+ * Event log sheet object
+ */
 const LOG_SHEET = LEDGER_SS.getSheetByName(LOG_SHEET_NAME);
 
-
+/**
+ * Ledger spreadsheet (entire file)
+ */
 let LEDGER_DATA = null;
 
-const GET_LEDGER_ = () => {
+/**
+ * Gets contents of points ledger and stores it in the LEDGER_DATA constant
+ */
+const GET_LEDGER = () => {
   LEDGER_DATA = LEDGER_DATA ?? getLedgerData_();
   return LEDGER_DATA;
 }
 
-// ALLOWS PROPER SHEET REF WHEN ACCESSING AS LIBRARY FROM EXTERNAL SCRIPT
-// SpreadsheetApp.getActiveSpreadsheet() DOES NOT WORK IN EXTERNAL SCRIPT
-const GET_LOG_SHEET_ = () => {
+/**
+ * Gets the log sheet by ID/name
+ * ALLOWS PROPER SHEET REF WHEN ACCESSING AS LIBRARY FROM EXTERNAL SCRIPT
+ * SpreadsheetApp.getActiveSpreadsheet() DOES NOT WORK IN EXTERNAL SCRIPT
+ */
+const GET_LOG_SHEET = () => {
   return (LOG_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LOG_SHEET_NAME);
 }
 
+/**
+ * Gets the ledger sheet by ID/name
+ * ALLOWS PROPER SHEET REF WHEN ACCESSING AS LIBRARY FROM EXTERNAL SCRIPT
+ * SpreadsheetApp.getActiveSpreadsheet() DOES NOT WORK IN EXTERNAL SCRIPT
+ */
 const GET_LEDGER_SHEET = () => {
   return (LEDGER_SHEET) ?? SpreadsheetApp.openById(LEDGER_SS_ID).getSheetByName(LEDGER_SHEET_NAME);
 }
 
-/** IMPORTANT FOR DATETIME FORMATTING AND SENDING EMAILS */
+/** 
+ * Timezone of the script
+ * IMPORTANT FOR DATETIME FORMATTING AND SENDING EMAILS 
+ */
 const TIMEZONE = getUserTimeZone_();
+
+/**
+ * Official club email
+ * IMPORTANT FOR DATETIME FORMATTING AND SENDING EMAILS
+ */
 const MCRUN_EMAIL = 'mcrunningclub@ssmu.ca';
 
 
-/** SCRIPT PROPERTIES (MAKE SURE NAMES MATCHES ACTUAL STORE) */
+/** 
+ * Keys of properties in script properties (MAKE SURE NAMES MATCHES ACTUAL STORE) 
+ */
 const SCRIPT_PROPERTY_KEYS = {
   clientID: 'CLIENT_ID',
   clientSecret: 'CLIENT_SECRET',
@@ -58,19 +101,10 @@ const SCRIPT_PROPERTY_KEYS = {
   isResetAllowed: 'IS_RESET_ALLOWED,'
 };
 
-
-/** RUN LEVELS + COUNT */
-const ATTENDEE_MAP = {
-  // 'beginner': ATTENDEES_BEGINNER_COL,
-  // //'easy': ATTENDEES_BEGINNER_COL,
-  // 'intermediate': ATTENDEES_INTERMEDIATE_COL,
-  // 'advanced':  ATTENDEES_ADVANCED_COL,
-};
-
-const LEVEL_COUNT = Object.keys(ATTENDEE_MAP).length;
-
-
-/** STORES INDEX OF COLUMNS IN POINTS_SHEET */
+/** 
+ * Maps columns to column number in points ledger sheet
+ * Col 16+ store event-specific points
+ */
 const LEDGER_INDEX = {
   EMAIL: 1,
   FEE_STATUS: 2,
@@ -86,21 +120,24 @@ const LEDGER_INDEX = {
   RUN_STREAK: 12,
   TOTAL_RUNS: 13,
   TOTAL_DISTANCE: 14,
-  TOTAL_ELEVATION: 15,
-  // Col 16+ store event-specific points
+  TOTAL_ELEVATION: 15
 }
 
-/** LEDGER SHEET COL SIZE (WITHOUT EVENT-SPECIFIC POINTS COL) */
+/**
+ * LEDGER SHEET COL SIZE (WITHOUT EVENT-SPECIFIC POINTS COL)
+ */
 const LEDGER_COL_COUNT = Object.keys(LEDGER_INDEX).length;
 
 
-/** STORES INDEX OF COLUMNS IN LOG_SHEET */
+/**
+ * Maps columns to column number in log sheet
+ */
 const LOG_INDEX = {
   IMPORT_TIMESTAMP: 1,
   EVENT: 2,
   HEADRUNNERS: 3,
   EVENT_TIMESTAMP: 4,
-  ATTENDEE_NAME_EMAIL: 5,
+  ATTENDEES: 5,
   DISTANCE_ESTIMATED: 6,
   EVENT_POINTS: 7,
   EMAIL_STATUS: 8,
@@ -115,23 +152,55 @@ const LOG_INDEX = {
   MAP_URL: 17,
 }
 
-
+/**
+ * Gets the timezone of the script
+ * 
+ * @return {string} Time zone
+ */
 function getUserTimeZone_() {
   return Session.getScriptTimeZone();
 }
 
+/**
+ * Gets the email of the user accessing the script
+ * 
+ * @return {string}  Email address
+ */
 function getCurrentUserEmail_() {
   return Session.getActiveUser().toString();
 }
 
+/**
+ * Tries to find a file in Google Drive by its name
+ * 
+ * May have an error if there are no results?
+ * 
+ * @param {string} name  Name of the file to find
+ * @return {File}  The first result of the search
+ */
 function getFileByName_(name) {
   return DriveApp.searchFiles(`title contains '${name}'`).next();
 }
 
+/**
+ * Tries to find a file in Google Drive by its ID
+ * 
+ * May have an error if there are no results?
+ * 
+ * @param {string} id  ID of the file to find
+ * @return {File}  The first result of the search
+ */
 function getFileById_(id) {
   return DriveApp.getFileById(id);
 }
 
+/**
+ * Creates log in the console with specific formatting
+ * 
+ * @param {string} msg  The message to log
+ * @param {string} [funcName]  Name of the function returning the message, if applicable. Defaults to ""
+ * @param {boolean} ][useLogger]  Whether to use the logger (true) or console.log (false). Defaults to true.
+ */
 function logAsPL_(msg, funcName = "", useLogger = true) {
   const message = `[PL#${funcName}] ${msg}`;
   useLogger ? Logger.log(message) : console.log(message);

@@ -28,18 +28,20 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
  * @date  Sep 17, 2025
- * @update  Sep 17, 2025
+ * @update  Oct 27, 2025
  */
 function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
   const activity = checkForExistingStrava_(row);
-  if(!activity) throw Error("No activity or polyline detected");
+  if(!activity) throw Error("No activity detected");
 
   const timestamp = getSubmissionTimestamp_(row);
-  activity['map'] = extractPolyline(activity['map']);
+  activity.map = extractPolyline(activity.map);
+  if(!activity.map) throw Error("No polyline detected");
 
   // Store created map and print url
   const updated = createAndAppendMap_(timestamp, activity);
-  Logger.log(updated?.["mapUrl"]);
+  setPolylineInRow(row, updated?.mapUrl);
+  Logger.log(updated?.mapUrl);
 
   /** Since `JSON.parse` will not work with values stored in
    *  GSheet col `MAP_POLYLINE`, we use a regex to extract it instead */
@@ -53,6 +55,13 @@ function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
     // Return polyline for both cases without delimeter (comma or bracket)
     const match = regexUntilComma.exec(str) ?? regexUntilBracket.exec(str);
     return match ? {'summary_polyline': match[1]} : null;
+  }
+
+  /** Only set mapUrl if cell empty */
+  function setPolylineInRow(row, mapUrl) {
+    const logSheet = GET_LOG_SHEET();
+    const polylineCell = logSheet.getRange(row, LOG_INDEX.MAP_URL);
+    if (polylineCell.getValue() == "") polylineCell.setValue(mapUrl);
   }
 }
 

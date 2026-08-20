@@ -124,7 +124,7 @@ function isEmailSendingAllowed_() {
  * @update  Sep 25, 2025
  */
 
-function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logSheet)) {
+function sendStatsEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSheet)) {
   const funcName = sendStatsEmail.name;
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
@@ -198,7 +198,7 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET_(), row = getValidLastRow_(logS
 function emailMemberStats_(recipients, activity) {
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
-  const ledgerData = GET_LEDGER_();
+  const ledgerData = GET_LEDGER();
   const isEmailAllowed = LEDGER_INDEX.EMAIL_ALLOWED - 1;    // Make 0-indexed for arr
   const res = [];
 
