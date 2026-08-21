@@ -17,15 +17,15 @@ limitations under the License.
 */
 
 const LOG_TARGETS = {
-  'id': LOG_INDEX.STRAVA_ACTIVITY_ID,      // (long)
-  'name': LOG_INDEX.STRAVA_ACTIVITY_NAME,  // (string)
-  'distance': LOG_INDEX.DISTANCE_STRAVA,   // meters (float)
-  'moving_time': LOG_INDEX.MOVING_TIME,  // seconds (int)
-  'average_speed': LOG_INDEX.PACE,         // m per sec (float)
-  'max_speed': LOG_INDEX.MAX_SPEED,        // m per sec (float)
-  'total_elevation_gain': LOG_INDEX.ELEVATION,   // meters (float)
-  'map': LOG_INDEX.MAP_POLYLINE,
-  'mapUrl': LOG_INDEX.MAP_URL,
+  'id': LOG_COL.STRAVA_ACTIVITY_ID,      // (long)
+  'name': LOG_COL.STRAVA_ACTIVITY_NAME,  // (string)
+  'distance': LOG_COL.DISTANCE_STRAVA,   // meters (float)
+  'moving_time': LOG_COL.MOVING_TIME,  // seconds (int)
+  'average_speed': LOG_COL.PACE,         // m per sec (float)
+  'max_speed': LOG_COL.MAX_SPEED,        // m per sec (float)
+  'total_elevation_gain': LOG_COL.ELEVATION,   // meters (float)
+  'map': LOG_COL.MAP_POLYLINE,
+  'mapUrl': LOG_COL.MAP_URL,
 };
 
 // Simple logging of multi-line message. Improves readability in code.
@@ -67,7 +67,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
     return activity;
   }
 
-  const timestamp = getSubmissionTimestamp_(row);
+  const timestamp = getTimestampInRow_(row);
   const level = getRowLevel_(row);
   
   activity = popLevelRunFromExtras_(level);
@@ -121,8 +121,8 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
 
 function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
   const sheet = GET_LOG_SHEET();
-  const startCol = LOG_INDEX.STRAVA_ACTIVITY_ID;
-  const endCol = LOG_INDEX.MAP_URL;
+  const startCol = LOG_COL.STRAVA_ACTIVITY_ID;
+  const endCol = LOG_COL.MAP_URL;
 
   const stravaValues = sheet.getSheetValues(row, startCol, 1, endCol)[0];
 
@@ -131,7 +131,7 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
   }
 
   const activityObj = {};
-  const offset = LOG_INDEX.STRAVA_ACTIVITY_ID;
+  const offset = LOG_COL.STRAVA_ACTIVITY_ID;
 
   for (const [id, index] of Object.entries(LOG_TARGETS)) {
     const relativeIndex = index - offset;
@@ -144,7 +144,7 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
 
 function getRowLevel_(row) {
   const sheet = GET_LOG_SHEET();
-  const eventTitle = sheet.getRange(row, LOG_INDEX.EVENT).getValue();
+  const eventTitle = sheet.getRange(row, LOG_COL.EVENT).getValue();
 
   const levelRegex = /\b(beginner|easy|intermediate|advanced)\b/i;
   const matches = eventTitle.match(levelRegex);
@@ -335,7 +335,7 @@ function setStravaStats_(row, activity) {
   const statsMap = Object.entries(LOG_TARGETS);
 
   // Get range from Strava Account to Map Polyline
-  const startCol = LOG_INDEX.STRAVA_ACTIVITY_ID;
+  const startCol = LOG_COL.STRAVA_ACTIVITY_ID;
   const size = statsMap.length;
   const rangeToSet = sheet.getRange(row, startCol, 1, size);
 

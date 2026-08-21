@@ -105,7 +105,7 @@ const SCRIPT_PROPERTY_KEYS = {
  * Maps columns to column number in points ledger sheet
  * Col 16+ store event-specific points
  */
-const LEDGER_INDEX = {
+const LEDGER_COL = {
   EMAIL: 1,
   FEE_STATUS: 2,
   FIRST_NAME: 3,
@@ -126,13 +126,13 @@ const LEDGER_INDEX = {
 /**
  * LEDGER SHEET COL SIZE (WITHOUT EVENT-SPECIFIC POINTS COL)
  */
-const LEDGER_COL_COUNT = Object.keys(LEDGER_INDEX).length;
+const LEDGER_COL_COUNT = Object.keys(LEDGER_COL).length;
 
 
 /**
  * Maps columns to column number in log sheet
  */
-const LOG_INDEX = {
+const LOG_COL = {
   IMPORT_TIMESTAMP: 1,
   EVENT: 2,
   HEADRUNNERS: 3,

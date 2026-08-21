@@ -47,14 +47,14 @@ const WINBACKEMAIL_SUBJECT = "We've missed you!";
 const WINBACKEMAIL_TEMPLATE = "winbackemail";
 
 const EMAIL_LEDGER_TARGETS = {
-  'FIRST_NAME': LEDGER_INDEX.FIRST_NAME,
-  'USE_METRIC': LEDGER_INDEX.USE_METRIC,
-  'TPOINTS': LEDGER_INDEX.TOTAL_POINTS,
-  'LAST_RUN_DATE': LEDGER_INDEX.LAST_RUN_DATE,
-  'TWEEKS': LEDGER_INDEX.RUN_STREAK,
-  'TRUNS': LEDGER_INDEX.TOTAL_RUNS,
-  'TOTAL_DISTANCE': LEDGER_INDEX.TOTAL_DISTANCE,
-  'TOTAL_ELEVATION': LEDGER_INDEX.TOTAL_ELEVATION,
+  'FIRST_NAME': LEDGER_COL.FIRST_NAME,
+  'USE_METRIC': LEDGER_COL.USE_METRIC,
+  'TPOINTS': LEDGER_COL.TOTAL_POINTS,
+  'LAST_RUN_DATE': LEDGER_COL.LAST_RUN_DATE,
+  'TWEEKS': LEDGER_COL.RUN_STREAK,
+  'TRUNS': LEDGER_COL.TOTAL_RUNS,
+  'TOTAL_DISTANCE': LEDGER_COL.TOTAL_DISTANCE,
+  'TOTAL_ELEVATION': LEDGER_COL.TOTAL_ELEVATION,
 };
 
 const EMAIL_PLACEHOLDER_LABELS = {
@@ -91,7 +91,7 @@ function fTest() {
 function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_(logSheet)) {
   // Update the status of sending email
   const currentTime = Utilities.formatDate(new Date(), TIMEZONE, '[dd-MMM HH:mm:ss] ---');
-  const statusRange = logSheet.getRange(thisRow, LOG_INDEX.EMAIL_STATUS);
+  const statusRange = logSheet.getRange(thisRow, LOG_COL.EMAIL_STATUS);
 
   // Append status to previous value (if non-empty)
   const previousValue = statusRange.getValue() ? statusRange.getValue() + '\n' : '';
@@ -135,7 +135,7 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSh
   logAsPL_(`Email can be sent! Continuing execution now...`, funcName);
 
   // Get attendees from log
-  const attendees = getAttendeesInLog_(row);
+  const attendees = getAttendeesInRow_(row);
   if (!attendees) {
     logAsPL_(`No recipients found for row: ${row}`, funcName);
     return null;
@@ -150,7 +150,7 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSh
   activityStats['points'] = getEventPointsInRow_(row);
 
   // Append headrun details
-  const { date, level } = getEventDateAndLevel_(row);
+  const { date, level } = getDateAndLevelInRow_(row);
   activityStats['run_date'] = date;
   activityStats['level'] = level;
 
@@ -199,7 +199,7 @@ function emailMemberStats_(recipients, activity) {
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
   const ledgerData = GET_LEDGER();
-  const isEmailAllowed = LEDGER_INDEX.EMAIL_ALLOWED - 1;    // Make 0-indexed for arr
+  const isEmailAllowed = LEDGER_COL.EMAIL_ALLOWED - 1;    // Make 0-indexed for arr
   const res = [];
 
   // Get activity stats in metric and US imperial
@@ -316,9 +316,9 @@ function checkAndSendWinBackEmail() {
   }
 
   // columns (0 indexed)
-  const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;    // const EMAIL_COL = 0;
-  const FNAME_COL = LEDGER_INDEX.FIRST_NAME - 1;   // const FNAME_COL = 2;
-  const LAST_RUN_COL = LEDGER_INDEX.LAST_RUN_DATE - 1;   // const LAST_RUN_COL = 10;
+  const EMAIL_COL = LEDGER_COL.EMAIL - 1;    // const EMAIL_COL = 0;
+  const FNAME_COL = LEDGER_COL.FIRST_NAME - 1;   // const FNAME_COL = 2;
+  const LAST_RUN_COL = LEDGER_COL.LAST_RUN_DATE - 1;   // const LAST_RUN_COL = 10;
 
   // make date object for 2 weeks ago
   let dateThreshold = new Date();

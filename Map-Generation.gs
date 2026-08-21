@@ -34,7 +34,7 @@ function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
   const activity = checkForExistingStrava_(row);
   if(!activity) throw Error("No activity detected");
 
-  const timestamp = getSubmissionTimestamp_(row);
+  const timestamp = getTimestampInRow_(row);
   activity.map = extractPolyline(activity.map);
   if(!activity.map) throw Error("No polyline detected");
 
@@ -60,7 +60,7 @@ function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
   /** Only set mapUrl if cell empty */
   function setPolylineInRow(row, mapUrl) {
     const logSheet = GET_LOG_SHEET();
-    const polylineCell = logSheet.getRange(row, LOG_INDEX.MAP_URL);
+    const polylineCell = logSheet.getRange(row, LOG_COL.MAP_URL);
     if (polylineCell.getValue() == "") polylineCell.setValue(mapUrl);
   }
 }

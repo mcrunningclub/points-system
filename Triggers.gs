@@ -111,13 +111,13 @@ function runStravaChecker() {
   /** Helper: check if Strava activity already logged */
   function isStravaFound(row) {
     const sheet = GET_LOG_SHEET();
-    const value = sheet.getRange(row, LOG_INDEX.STRAVA_ACTIVITY_ID).getValue();
+    const value = sheet.getRange(row, LOG_COL.STRAVA_ACTIVITY_ID).getValue();
     return value.toString().trim() != '';
   }
 
   function isEmailsSent(row) {
     const sheet = GET_LOG_SHEET();
-    const value = sheet.getRange(row, LOG_INDEX.EMAIL_STATUS).getValue();
+    const value = sheet.getRange(row, LOG_COL.EMAIL_STATUS).getValue();
     return value.toString().trim() != '';
   }
 

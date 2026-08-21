@@ -16,18 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * Removed functions from previous static version (Points Ledger 2023/2024)
- *  - appendHeadRun() 
- *  - importMembers()
- *  - tallyPointsOnce()
- *  - updateHeadRunPoints()
- *  - formatDateNote()
- * 
- * UPDATED: MARCH 27, 2025
- */
-
-
 // CURRENTLY IN REVIEW!
 function newSubmission() {
   formatSpecificColumns();
@@ -47,95 +35,110 @@ function newSubmission() {
  * @update  Mar 23, 2025
  */
 
-function getLatestSubmissionTimestamp_() {
-  return getSubmissionTimestamp_(getValidLastRow_(GET_LOG_SHEET()));
-}
-
-function getSubmissionTimestamp_(row) {
-  const sheet = GET_LOG_SHEET();
-  const timestampCol = LOG_INDEX.EVENT_TIMESTAMP;
-  const timestamp = sheet.getRange(row, timestampCol).getValue();
-  return new Date(timestamp);
+function getLatestTimestamp_() {
+  return getTimestampInRow_(getValidLastRow_(GET_LOG_SHEET()));
 }
 
 
 /**
- * Find row index of last entry, starting from bottom using while-loop.
+ * Return timestamp for a specified row in LOG_SHEET.
  * 
- * Used to prevent native `sheet.getLastRow()` from returning empty row.
- * 
- * @param {SpreadsheetApp.Sheet} sheet  Target sheet.
- * @return {integer}  Returns 1-index of last row in `sheet`.
- *  
- * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * @date  Sept 1, 2024
- * @update  May 25, 2025
+ * @param {integer} row  Row number.
+ * @return {Date}  Timestamp as Date object.
  */
-
-function getValidLastRow_(sheet) {
-  const startRow = 1;   // Do not skip header row here
-  const numRow = sheet.getLastRow();
-
-  // Fetch all values
-  const values = sheet.getSheetValues(startRow, 1, numRow, 1);
-  let lastRow = values.length;
-
-  // Loop through the values in reverse order
-  while (values[lastRow - 1][0] === "") {
-    lastRow--;
-  }
-
-  return lastRow;
+function getTimestampInRow_(row) {
+  const sheet = GET_LOG_SHEET();
+  const timestampCol = LOG_COL.EVENT_TIMESTAMP;
+  const timestamp = sheet.getRange(row, timestampCol).getValue();
+  return new Date(timestamp);
 }
 
-
-// Return latest log values
+/**
+ * Return content of latest row in log sheet.
+ * 
+ * @return {Array}  Values of each column in the last row.
+ */
 function getLatestLog_() {
-  return getLogInRow_();
+  return getLogInRow_(getValidLastRow_(LOG_SHEET));
 }
 
-function getLogInRow_(row = getValidLastRow_(LOG_SHEET)) {
+/**
+ * Return content of specified row in log sheet.
+ * 
+ * @param {integer} row  Row number.
+ * @return {Array}  Values of each column in the specified row.
+ */
+function getLogInRow_(row) {
   const sheet = GET_LOG_SHEET();
   const numCols = sheet.getLastColumn();
   return sheet.getSheetValues(row, 1, 1, numCols)[0];
 }
 
-function getAttendeesInLog_(row) {
-  // Get log attendees using stored index
-  const attendeesCol = LOG_INDEX.ATTENDEES - 1;
-  const thisLog = getLogInRow_(row);
-
-  // Return log attendees
-  return thisLog[attendeesCol];
+/**
+ * Return list of attendees in specified row of log sheet.
+ * 
+ * @param {integer} row  Row number.
+ * @return {string}  Attendees, separated by newline.
+ */
+function getAttendeesInRow_(row) {
+  return getLogCell_(row, LOG_COL.ATTENDEES);
 }
 
-function getEventDateAndLevel_(row) {
-  const rawString = getLogCell_(row, LOG_INDEX.EVENT);
+/**
+ * Return date and level (of headruns) in specified row of log sheet.
+ * 
+ * @param {integer} row  Row number.
+ * @return {{string: string}}  Object with keys 'date' and 'level', and corresponding values.
+ */
+function getDateAndLevelInRow_(row) {
+  const rawString = getLogCell_(row, LOG_COL.EVENT);
   return {
     'date' : rawString.match(/^[^\n]*\n(.*)$/i)[1],
     'level' : rawString.match(/(?:Headrun)\s+(\w+)/i)[1],
   }
 }
 
+/**
+ * Return map URL in specified row of log sheet.
+ * 
+ * @param {integer} row  Row number.
+ * @return {string}  Map URL, or emtpy string if not found.
+ */
 function getMapUrlInRow_(row) {
-  return getLogCell_(row, LOG_INDEX.MAP_URL) || "";
+  return getLogCell_(row, LOG_COL.MAP_URL) || "";
 }
 
+/**
+ * Return points for the event in specified row of log sheet.
+ * 
+ * @param {integer} row  Row number.
+ * @return {number}  Number of points, or 0 if not found.
+ */
 function getEventPointsInRow_(row) {
-  return getLogCell_(row, LOG_INDEX.EVENT_POINTS) || 0;
+  return getLogCell_(row, LOG_COL.EVENT_POINTS) || 0;
 }
 
+/**
+ * Return list of headrunners in specified row of log sheet.
+ * 
+ * @param {integer} row  Row number.
+ * @return {string}  Headrunners, separated by newline.
+ */
 function getHeadrunnersInRow_(row) {
-  return getLogCell_(row, LOG_INDEX.HEADRUNNERS) || "";
+  return getLogCell_(row, LOG_COL.HEADRUNNERS) || "";
 }
 
+/**
+ * Returns value of specified cell in the log sheet.
+ * 
+ * @param {number} row  Row number of cell.
+ * @param {number} column  Column number of cell.
+ * @return {*}  Cell value.
+ */
 function getLogCell_(row, column) {
   const sheet = GET_LOG_SHEET();
   return sheet.getRange(row, column).getValue();
 }
-
-
-
 
 /**
  * Get ledger data from `LEDGER_SHEET` to send emails.
@@ -151,17 +154,23 @@ function getLogCell_(row, column) {
  */
 
 function getLedgerData_(numCols = LEDGER_COL_COUNT) {
-  const pointSheet = GET_LEDGER_SHEET();
+  const sheet = GET_LEDGER_SHEET();
 
   // Define dimensions of sheet data
   const startCol = 1;
   const startRow = 2;
-  const numRows = getValidLastRow_(pointSheet) - 1;   // Remove header row
+  const numRows = getValidLastRow_(sheet) - 1;   // Remove header row
 
-  return pointSheet.getSheetValues(startRow, startCol, numRows, numCols);
+  return sheet.getSheetValues(startRow, startCol, numRows, numCols);
 }
 
-
+/**
+ * Get ledger data of member using their email.
+ * 
+ * @param {string}  Member email address.
+ * @param {Object[][]} ledgerData  Ledger data object, from GET_LEDGER_()
+ * @return {Array}  Values of the row corresponding to specified member, or empty array if not found.
+ */
 function getLedgerEntry_(email, ledgerData) {
   const row = findMemberInLedger_(email, ledgerData);
   return ledgerData[row] ?? [];
@@ -171,7 +180,7 @@ function getLedgerEntry_(email, ledgerData) {
  * Recursive function to search for entry by email in `sheet` using binary search.
  * Returns row index of `email` in GSheet (1-indexed), or null if not found.
  * 
- * @param {string} emailToFind  The email address to search for in `sheet`.
+ * @param {string} email  The email address to search for in `sheet`.
  * @param {SpreadsheetApp.Sheet} sheet  The sheet to search in.
  * @param {number} [start=2]  The starting row index for the search (1-indexed). 
  *                            Defaults to 2 (the second row) to avoid the header row.
@@ -188,8 +197,8 @@ function getLedgerEntry_(email, ledgerData) {
  * @update  Mar 23, 2025
  */
 
-function findMemberInLedger_(emailToFind, ledger) {
-  const EMAIL_COL = LEDGER_INDEX.EMAIL - 1;   // Make 0-indexed
+function findMemberInLedger_(email, ledger) {
+  const EMAIL_COL = LEDGER_COL.EMAIL - 1;   // Make 0-indexed
   return findThisEmailBinarySearch();
 
   /** Define as inner function to prevent passing `emailToFind` and `ledger` at every call */
@@ -207,12 +216,12 @@ function findMemberInLedger_(emailToFind, ledger) {
 
     // Compare the target email with the middle email
     /** If the email matches, return the row index in ledger */
-    if (emailAtMid === emailToFind) {
+    if (emailAtMid === email) {
       return mid;
 
     /** If the email at the middle row is alphabetically smaller, search the right half. */
     /** Note: use localeString() to ensure string comparison matches GSheet. */
-    } else if (emailAtMid.localeCompare(emailToFind) === -1) {
+    } else if (emailAtMid.localeCompare(email) === -1) {
       return findThisEmailBinarySearch(mid + 1, end);
 
     /** If the email at the middle row is alphabetically larger, search the left half. */
@@ -224,7 +233,7 @@ function findMemberInLedger_(emailToFind, ledger) {
 
 
 /** 
- * Handles the transfered submission from Attendance Code.
+ * Handles the transfered submission from Attendance Code and adds new row to log sheet.
  * 
  * @param {Array[][]} importArr  Submission array with non-empty run levels.
  * @return {integer}  The newly added row number in Log sheet
@@ -240,26 +249,26 @@ function storeImportFromAttendanceSheet(importArr) {
   logAsPL_('Processing following import...', funcName);
   Logger.log(importArr);
 
-  const logNewRow = getValidLastRow_(logSheet) + 1;
+  const row = getValidLastRow_(logSheet) + 1;
 
   try {
-    const packageNumRows = importArr.length;
-    const packageNumCols = importArr[0].length;
+    const importNumRows = importArr.length;
+    const importNumCols = importArr[0].length;
 
     // Print number of rows and columns
-    logAsPL_(`Row count: ${packageNumRows}\tCol count: ${packageNumCols}`, funcName, false);
+    logAsPL_(`Row count: ${importNumRows}\tCol count: ${importNumCols}`, funcName, false);
     
     // Now set import as-if (processing occured in Attendance Sheet)
-    logSheet.getRange(logNewRow, 1, packageNumRows, packageNumCols).setValues(importArr);
+    logSheet.getRange(row, 1, importNumRows, importNumCols).setValues(importArr);
 
     // Log success message
-    logAsPL_(`Successfully imported values to row ${logNewRow} in Log Sheet`, funcName, false);
+    logAsPL_(`Successfully imported values to row ${row} in Log Sheet`, funcName, false);
   }
   catch (e) {
     logAsPL_("Unable to fully process 'importArr'", funcName);
     throw e;
   }
 
-  return logNewRow;
+  return row;
 }
 
