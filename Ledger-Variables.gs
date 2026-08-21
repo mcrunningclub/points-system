@@ -152,56 +152,36 @@ const LOG_COL = {
   MAP_URL: 17,
 }
 
-/**
- * Gets the timezone of the script
- * 
- * @return {string} Time zone
- */
-function getUserTimeZone_() {
-  return Session.getScriptTimeZone();
-}
 
 /**
- * Gets the email of the user accessing the script
- * 
- * @return {string}  Email address
+ * Maps Strava stats to their formatting functions
  */
-function getCurrentUserEmail_() {
-  return Session.getActiveUser().toString();
+const NUMBER_FORMAT_MAP = {
+  'distance': x => toFixedTruncate(x, 2),
+  'moving_time': x => toMinuteSeconds(x),
+  'average_speed': x => toMinuteSeconds(x),
+  'max_speed': x => x.toFixed(1),
+  'total_elevation_gain': x => {
+    const sign = (x > 0) ? '+' : '';
+    return `${sign}${x.toFixed(0)}`;
+  }
 }
 
-/**
- * Tries to find a file in Google Drive by its name
- * 
- * May have an error if there are no results?
- * 
- * @param {string} name  Name of the file to find
- * @return {File}  The first result of the search
- */
-function getFileByName_(name) {
-  return DriveApp.searchFiles(`title contains '${name}'`).next();
-}
 
 /**
- * Tries to find a file in Google Drive by its ID
+ * Maps Strava stats to unit conversion factors for metric and imperial system
  * 
- * May have an error if there are no results?
- * 
- * @param {string} id  ID of the file to find
- * @return {File}  The first result of the search
+ * Distance -> convert meters to km or mile. 
+ * Moving time -> keep the same.
+ * Average speed -> convert meters/sec to km/sec or mi/sec. 
+ * Max speed -> convert meters/sec to km/h or mph. 
+ * Total elevation gain -> convert meters to feet for imperial.
  */
-function getFileById_(id) {
-  return DriveApp.getFileById(id);
+const UNITS_MAP = {
+  'distance': { metric: 0.001, imperial: 1 / 1609.344 },
+  'moving_time': { metric: 1, imperial: 1 },
+  'average_speed': { metric: 0.001, imperial: 1 / 1609.344 },
+  'max_speed': { metric: 3.6, imperial: 2.237 },
+  'total_elevation_gain': { metric: 1, imperial: 3.2808 },
 }
 
-/**
- * Creates log in the console with specific formatting
- * 
- * @param {string} msg  The message to log
- * @param {string} [funcName]  Name of the function returning the message, if applicable. Defaults to ""
- * @param {boolean} ][useLogger]  Whether to use the logger (true) or console.log (false). Defaults to true.
- */
-function logAsPL_(msg, funcName = "", useLogger = true) {
-  const message = `[PL#${funcName}] ${msg}`;
-  useLogger ? Logger.log(message) : console.log(message);
-}

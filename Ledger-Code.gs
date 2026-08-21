@@ -19,7 +19,7 @@ limitations under the License.
 // CURRENTLY IN REVIEW!
 function newSubmission() {
   formatSpecificColumns();
-  sortTimestampByAscending();
+  sortLogsByTimestamp();
   //sendStatsEmail()
 }
 
