@@ -201,3 +201,12 @@ const LOG_TARGETS = {
   'mapUrl': LOG_COL.MAP_URL,
 };
 
+/**
+ * Base url for the Strava API
+ */
+const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/';
+
+/**
+ * Endpoint for Strava activities for the Strava API
+ */
+const ACTIVITIES_ENDPOINT = 'athlete/activities';

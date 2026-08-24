@@ -24,9 +24,6 @@ THIS FILE HAS BEEN MODIFIED BY ANDREY GONZALEZ AS FOLLOWING:
 - Improved documentation and inline comments
 */
 
-const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/';
-const ACTIVITIES_ENDPOINT = 'athlete/activities';
-
 /**
  * Reset the authorization state, so that it can be re-tested.
  */
@@ -61,7 +58,14 @@ function safeReset() {
 }
 
 
-/** Get Strava Activity in the input range */
+/** 
+ * Get Strava activities within the given time frame
+ * 
+ * @param {integer?} fromTimestamp  Start of time frame, in Unix epoch time
+ * @param {integer?} toTimestamp  End of time frame, in Unix epoch time
+ * 
+ * @return {Object[]}  Returns array of Strava activities
+ */
 function getStravaActivity_(fromTimestamp, toTimestamp) {
   // Package query for Strava API
   const queryObj = { 
@@ -70,18 +74,18 @@ function getStravaActivity_(fromTimestamp, toTimestamp) {
     'include_all_efforts' : true 
   };
 
-  return callStravaAPI_(queryObj);    // Returns array of Strava activities
+  return callStravaAPI_(queryObj);
 }
 
 
 /**
- * Configures the service using the OAuth2 library.
+ * Configures the Strava service using the OAuth2 library.
  * 
  * Three required and optional parameters are not specified
  * because the library creates the authorization URL with them
  * automatically: `redirect_url`, `response_type`, and `state`.
  * 
- * #### APPENDED COMMENTS BY USER
+ * *APPENDED COMMENTS BY USER*
  * 
  * Client ID and Secret stored in script properties. *(Mar 23, 2025)*
  * 
@@ -125,7 +129,7 @@ function getStravaService_() {
 /**
  * Handles the OAuth callback.
  * 
- * #### APPENDED COMMENTS BY USER
+ * *APPENDED COMMENTS BY USER*
  * 
  * Must have global scope in project *(Mar 23, 2025)*
  * 
@@ -210,7 +214,7 @@ function callStravaAPI_(query_object = {}) {
 /**
  * Maps an Object containing param-value pairs to a query string.
  *  
- * @param {object} query_objec]  Param-value pair.
+ * @param {object} query_object  Param-value pair.
  * @return {string}  String value of query object.
  * 
  * ### Sample script
@@ -236,29 +240,5 @@ function queryObjToString_(query_object) {
     .join('&');
 
   return '?' + query_string;
-}
-
-
-/** Functions previously in `Passkit-API.gs` */
-
-function genTokenSign_(token, secret) {
-  if (token.length != 2) {
-      return;
-  }
-  var hash = Utilities.computeHmacSha256Signature(token.join("."), secret);
-  var base64Hash = Utilities.base64Encode(hash);
-  return urlConvertBase64_(base64Hash);
-}
-
-function base64url_(input) {
-  var base64String = Utilities.base64Encode(input);
-  return urlConvertBase64_(base64String);
-}
-
-function urlConvertBase64_(input) {
-  var output = input.replace(/=+$/, '');
-  output = output.replace(/\+/g, '-');
-  output = output.replace(/\//g, '_');
-  return output;
 }
 
