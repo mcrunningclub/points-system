@@ -234,6 +234,7 @@ function findMemberInLedger_(email, ledger) {
 
 /** 
  * Handles the transfered submission from Attendance Code and adds new row to log sheet.
+ * Called from the Attendance Code script.
  * 
  * @param {Array[][]} importArr  Submission array with non-empty run levels.
  * @return {integer}  The newly added row number in Log sheet

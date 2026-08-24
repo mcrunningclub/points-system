@@ -31,7 +31,7 @@ const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
  * @update  Oct 27, 2025
  */
 function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
-  const activity = checkForExistingStrava_(row);
+  const activity = checkExistingStravaActivity_(row);
   if(!activity) throw Error("No activity detected");
 
   const timestamp = getTimestampInRow_(row);

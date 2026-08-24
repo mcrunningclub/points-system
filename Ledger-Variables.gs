@@ -157,9 +157,9 @@ const LOG_COL = {
  * Maps Strava stats to their formatting functions
  */
 const NUMBER_FORMAT_MAP = {
-  'distance': x => toFixedTruncate(x, 2),
-  'moving_time': x => toMinuteSeconds(x),
-  'average_speed': x => toMinuteSeconds(x),
+  'distance': x => toFixedTruncate_(x, 2),
+  'moving_time': x => toMinuteSeconds_(x),
+  'average_speed': x => toMinuteSeconds_(x),
   'max_speed': x => x.toFixed(1),
   'total_elevation_gain': x => {
     const sign = (x > 0) ? '+' : '';
@@ -184,4 +184,20 @@ const UNITS_MAP = {
   'max_speed': { metric: 3.6, imperial: 2.237 },
   'total_elevation_gain': { metric: 1, imperial: 3.2808 },
 }
+
+
+/**
+ * Maps Strava stats to their target column in the event log sheet.
+ */
+const LOG_TARGETS = {
+  'id': LOG_COL.STRAVA_ACTIVITY_ID,      // (long)
+  'name': LOG_COL.STRAVA_ACTIVITY_NAME,  // (string)
+  'distance': LOG_COL.DISTANCE_STRAVA,   // meters (float)
+  'moving_time': LOG_COL.MOVING_TIME,  // seconds (int)
+  'average_speed': LOG_COL.PACE,         // m per sec (float)
+  'max_speed': LOG_COL.MAX_SPEED,        // m per sec (float)
+  'total_elevation_gain': LOG_COL.ELEVATION,   // meters (float)
+  'map': LOG_COL.MAP_POLYLINE,
+  'mapUrl': LOG_COL.MAP_URL,
+};
 

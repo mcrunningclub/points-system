@@ -126,3 +126,26 @@ function fillInTemplateFromObject_(template, data) {
 
   return JSON.parse(template_string);
 }
+
+
+/** 
+ * Simple logging of multi-line message. Improves readability in code.
+ * @param {string} msg  The message(s) to log
+ */
+const prettyLog_ = (...msg) => console.log(msg.join('\n'));
+
+
+/**
+ * Convert a Date timestamp to a Unix Epoch timestamp.
+ * 
+ * @param {Date} timestamp  Timestamp to convert.
+ * @return {integer}  Number of seconds elapsed since January 1, 1970.
+ * 
+ * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
+ * @date  Dec 1, 2024
+ * @update  Dec 1, 2024
+ */
+
+function getUnixEpochTimestamp_(timestamp) {
+  return Math.floor(timestamp.getTime() / 1000);
+}

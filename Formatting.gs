@@ -83,7 +83,7 @@ function convertAndFormatStats_(activity) {
 }
 
 /**
- * Truncate decimal number to given number of digits.
+ * Truncate decimal number to given number of digits (for Strava stats).
  * 
  * Replaced .toFixed() to improve accuracy, e.g. 5.9989 -> 5.99 instead of 6.00
  * 
@@ -91,7 +91,7 @@ function convertAndFormatStats_(activity) {
  * @param {integer} digits  Number of decimal places to keep
  * @return {float}  Truncated number
  */
-function toFixedTruncate(num, digits) {
+function toFixedTruncate_(num, digits) {
   const factor = Math.pow(10, digits);
   const truncated = Math.floor(num * factor) / factor;
 
@@ -99,12 +99,12 @@ function toFixedTruncate(num, digits) {
 }
 
 /** 
- * Format duration as 'mm:ss'.
+ * Format duration as 'mm:ss' (for Strava stats).
  * 
  * @param {number} t  Duration in seconds
  * @return {string}  Duration in format mm:ss
  */
-function toMinuteSeconds(t) {
+function toMinuteSeconds_(t) {
   const totalMin = Math.floor(t / 60);
   const totalSec = `${Math.round(t % 60)}`;
 

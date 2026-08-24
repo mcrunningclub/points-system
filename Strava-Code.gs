@@ -16,21 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const LOG_TARGETS = {
-  'id': LOG_COL.STRAVA_ACTIVITY_ID,      // (long)
-  'name': LOG_COL.STRAVA_ACTIVITY_NAME,  // (string)
-  'distance': LOG_COL.DISTANCE_STRAVA,   // meters (float)
-  'moving_time': LOG_COL.MOVING_TIME,  // seconds (int)
-  'average_speed': LOG_COL.PACE,         // m per sec (float)
-  'max_speed': LOG_COL.MAX_SPEED,        // m per sec (float)
-  'total_elevation_gain': LOG_COL.ELEVATION,   // meters (float)
-  'map': LOG_COL.MAP_POLYLINE,
-  'mapUrl': LOG_COL.MAP_URL,
-};
-
-// Simple logging of multi-line message. Improves readability in code.
-const prettyLog_ = (...msg) => console.log(msg.join('\n'));
-
 function runMe() {
   //const ROW = 72;
   //findAndStoreStravaActivity(ROW);
@@ -61,7 +46,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   }
 
   // Check if Strava activity stored in sheet
-  let activity = checkForExistingStrava_(row);
+  let activity = checkExistingStravaActivity_(row);
   if (activity) {
     logAsPL_(`Strava activity found in log for row ${row}!`, funcName);
     return activity;
@@ -70,7 +55,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   const timestamp = getTimestampInRow_(row);
   const level = getRowLevel_(row);
   
-  activity = popLevelRunFromExtras_(level);
+  activity = getMatchingActivityFromExtra_(level);
   if (!activity || Object.keys(activity).length === 0) {
     // No activity stored, call Strava API instead
     // Get timestamp from row to use as filter
@@ -80,7 +65,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
     // Get all activities within timestamp range
     // For multiple activities, make educated guess and get by distance 
     const activities = getStravaStats_(timestamp, limit);
-    activity = getActivityByLevel(level, activities);
+    activity = getMatchingStravaActivity_(level, activities);
 
     if (!activity) {
       throw Error (`No Strava activity found for ${timestamp} (${level})`);
@@ -119,7 +104,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
  * @update  Apr 1, 2025
  */
 
-function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
+function checkExistingStravaActivity_(row = getValidLastRow_(LOG_SHEET)) {
   const sheet = GET_LOG_SHEET();
   const startCol = LOG_COL.STRAVA_ACTIVITY_ID;
   const endCol = LOG_COL.MAP_URL;
@@ -142,6 +127,13 @@ function checkForExistingStrava_(row = getValidLastRow_(LOG_SHEET)) {
 }
 
 
+/**
+ * Gets the headrun level for a given row in the log sheet.
+ * 
+ * @param {integer} row  Row of the activity.
+ * 
+ * @returns {string|null}  Level as string, e.g. "beginner". Null if not found.
+ */
 function getRowLevel_(row) {
   const sheet = GET_LOG_SHEET();
   const eventTitle = sheet.getRange(row, LOG_COL.EVENT).getValue();
@@ -207,10 +199,10 @@ function getStravaStats_(submissionTimestamp, toTimestamp) {
  * ```
  */
 
-function getActivityByLevel(level, activities) {
+function getMatchingStravaActivity_(level, activities) {
   if (!activities || activities.length === 0) return null;
 
-  logAsPL_(`Now trying to match activity for level '${level}'...`, getActivityByLevel.name);
+  logAsPL_(`Now trying to match activity for level '${level}'...`, getMatchingStravaActivity_.name);
   console.log(activities);
 
   // First try to match by level in name, then try by distance
@@ -269,7 +261,6 @@ function getActivityByLevel(level, activities) {
 /**
  * Remove a specific Strava activity from the extra activities stored for a level.
  * 
- * @param {string} level  The level of headrun (e.g., 'easy', 'intermediate').
  * @param {number} activityId  The Strava activity ID to remove.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
@@ -306,6 +297,8 @@ function removeActivityFromExtra_(activityId) {
 /**
  * Retrieve extra Strava activities saved from previous API call.
  * 
+ * @param {string} level  Level of headrun (e.g. 'easy', 'intermediate').
+ *
  * @return {Object[]}  Extra Strava activities, or empty array if none found.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
@@ -313,10 +306,10 @@ function removeActivityFromExtra_(activityId) {
  * @update  Sep 28, 2025
  */
 
-function popLevelRunFromExtras_(level) {
+function getMatchingActivityFromExtra_(level) {
   const extraActivities = getExtraActivities();
-  logAsPL_(`Exited '${getExtraActivities.name}'`, popLevelRunFromExtras_.name);
-  const match = getActivityByLevel(level, extraActivities);
+  logAsPL_(`Exited '${getExtraActivities.name}'`, getMatchingActivityFromExtra_.name);
+  const match = getMatchingStravaActivity_(level, extraActivities);
 
   // Clean up store and return match
   match ? removeActivityFromExtra_(match.id) : console.log(`No match found :(`);
@@ -330,6 +323,12 @@ function popLevelRunFromExtras_(level) {
 }
 
 
+/**
+ * Puts stats from specified Strava activity into the log sheet.
+ * 
+ * @param {number} row  Row to save the activity in.
+ * @param {Object} activity  Strava activity to save stats from.
+ */
 function setStravaStats_(row, activity) {
   const sheet = GET_LOG_SHEET();
   const statsMap = Object.entries(LOG_TARGETS);
@@ -350,28 +349,14 @@ function setStravaStats_(row, activity) {
 
 
 /**
- * Convert a Date timestamp to a Unix Epoch timestamp.
- * 
- * @param {Date} timestamp  Timestamp to convert.
- * @return {integer}  Number of seconds elapsed since January 1, 1970.
- * 
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @date  Dec 1, 2024
- * @update  Dec 1, 2024
- */
-
-function getUnixEpochTimestamp_(timestamp) {
-  return Math.floor(timestamp.getTime() / 1000);
-}
-
-
-/**
  * Extract target run stats from Strava activity.
  * 
  * @see 'https://developers.strava.com/docs/reference/#api-models-SummaryActivity'
  * @see 'https://developers.strava.com/docs/reference/#api-models-ClubActivity'
  * 
  * @param {object} activity  A Strava object `SummaryActivity` or `ClubActivity`.
+ * @param {{string: number}} statsMap  An object that maps stats to be extracted to the columns to save them to.
+ * @param {number} offset  The amount to subtract from the column number. Default to 0.
  * @return {object}  Extracted stats from `activity`.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
