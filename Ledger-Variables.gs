@@ -210,3 +210,23 @@ const STRAVA_BASE_URL = 'https://www.strava.com/api/v3/';
  * Endpoint for Strava activities for the Strava API
  */
 const ACTIVITIES_ENDPOINT = 'athlete/activities';
+
+/**
+ * Google Drive folder to store maps in
+ */
+const MAPS_FOLDER = 'run_maps';
+
+/**
+ * Base URL for Google Maps API
+ */
+const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
+
+/**
+ * Base URL of the Google Cloud Storage API
+ */
+const BASE_UPLOAD_URL = "https://storage.googleapis.com/upload/storage/v1/b";
+
+/**
+ * Name of bucket in Google Cloud Storage
+ */
+const STORAGE_BUCKET_NAME = 'run-map-storage.firebasestorage.app';

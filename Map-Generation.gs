@@ -14,16 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const MAPS_FOLDER = 'run_maps';
-const MAPS_BASE_URL = "https://maps.googleapis.com/maps/api/staticmap";
-
 
 /**
- * Create the PNG image of run route from Strava activity and print 
- * public bucket url. This allows to manually generate the map 
- * if the polyline is already stored in the sheet.
+ * Create the PNG image of the run route from Strava activity from its polyline
+ * data and saves the public image URL in the row.
  * 
- * @param {number} row  GSheet row to target.
+ * @param {number} row  GSheet row to target. Defaults to last row.
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
@@ -40,7 +36,7 @@ function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
 
   // Store created map and print url
   const updated = createAndAppendMap_(timestamp, activity);
-  setPolylineInRow(row, updated?.mapUrl);
+  setMapUrlInRow(row, updated?.mapUrl);
   Logger.log(updated?.mapUrl);
 
   /** Since `JSON.parse` will not work with values stored in
@@ -58,86 +54,73 @@ function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
   }
 
   /** Only set mapUrl if cell empty */
-  function setPolylineInRow(row, mapUrl) {
+  function setMapUrlInRow(row, mapUrl) {
     const logSheet = GET_LOG_SHEET();
-    const polylineCell = logSheet.getRange(row, LOG_COL.MAP_URL);
-    if (polylineCell.getValue() == "") polylineCell.setValue(mapUrl);
+    const targetCell = logSheet.getRange(row, LOG_COL.MAP_URL);
+    if (targetCell.getValue() == "") targetCell.setValue(mapUrl);
   }
 }
 
+
 /**
- * Create and store PNG image of run route from Strava activity.
+ * Gets the polyline data from given activity and calls helper function to create a
+ * PNG image for it, then adds the image URL to the activity.
  * 
+ * Previous iterations of map creation include `MAP.newStaticMap()`, embedding GDrive download url
+ * in email (access restricted after some time), and adding map as inline image (email becomes too heavy).
+ * 
+ * @param {Object} activity  Strava activity with "map" key containing polyline data
  * @param {Date} timestamp  Recorded timestamp of event.
- * @param {Object} activity  Strava activity.
- * @return {Object}  Strava activity with appended map url
+ * @param {string} fileName  Name to save map with
+ * @returns {Object}  Strava activity with appended map url under the "mapUrl" key (or '' if unsuccessful)
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * 
- * @date  May 28, 2025
- * @update  Sep 18, 2025
+ * @date  Mar 27, 2025
+ * @update  Apr 4, 2025
  */
-function createAndAppendMap_(timestamp, activity) {
-  const formatName = (str) => str.replace(/\s+/g, '-') || "";
-  const formatTimestamp = (ts) => Utilities.formatDate(ts, TIMEZONE, "EEE-d-MMM-yyyy-k-mm-ss");
+function createMapForActivity_(activity, timestamp) {
+  // Extract polyline and save headrun route as map
+  const polyline = activity['map']['polyline'] ?? activity['map']['summary_polyline'];
 
-  const filename = `headrun-${ formatName(activity?.name) }map-${ formatTimestamp(timestamp)}.png`;
-  const mapBlob = createStravaMap_(activity, filename);
+  if (polyline) {
+    // Create file name for the map image
+    const formatName = (str) => str.replace(/\s+/g, '-') || "";
+    const formatTimestamp = (ts) => Utilities.formatDate(ts, TIMEZONE, "EEE-d-MMM-yyyy-k-mm-ss");
+    const fileName = `headrun-${ formatName(activity?.name) }map-${ formatTimestamp(timestamp)}.png`;
 
-  // Upload image to Google Cloud Storage and get sharing link
-  activity['mapUrl'] = uploadImageToBucket_(mapBlob, filename);
+    const response = convertPolylineToMap_(polyline, fileName, "580x420").getHeaders();
+
+    // Get file by id or name, then set permission to allow downloading
+    const file = response['file_id'] ? getFileById_(response['file_id']) : getFileByName_(fileName);
+    //file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+
+    const mapBlob = file.getBlob();
+    // Upload image to Google Cloud Storage and get sharing link
+    activity['mapUrl'] = uploadImageToCloudStorageBucket_(mapBlob, filename);
+  }
+  else {
+    // If polyline not found, don't create image
+    activity['mapUrl'] = '';
+  }
+
   return activity;
 }
 
 
 /**
- * Create a PNG image of run route to include in email from polyline.
- * 
- * Google Static Map API + Make Automations.
- * 
- * Previous iterations of map creation include `MAP.newStaticMap()`, embedding GDrive download url
- * in email (access restricted after some time), and adding map as inline image (email becomes too heavy).
- * 
- * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- * @date  Mar 27, 2025
- * @update  Apr 4, 2025
- */
-function createStravaMap_(activity, name) {
-  // Extract polyline and save headrun route as map
-  const polyline = activity['map']['polyline'] ?? activity['map']['summary_polyline'];
-
-  if (polyline) {
-    const response = saveMapForRun_(polyline, name).getHeaders();
-
-    // Get file by id or name, then set permission to allow downloading
-    const file = response['file_id'] ? getFileById_(response['file_id']) : getFileByName_(name);
-    //file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-
-    return file.getBlob();
-  }
-
-  return '';
-}
-
-
-/**
- * Save polyline as image using Google Map API and Make.com automation.
+ * Save polyline as image using Google Static Map API and Make.com automation.
  * 
  * @param {string} polyline  Encoded Google Map polyline string.
  * @param {string} name  Name for map.
+ * @param {string} imgSize  Size of map image, e.g "400x300"
  * 
  * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
  * @date  Mar 27, 2025
  * @update  Apr 4, 2025
  */
-function saveMapForRun_(polyline, name) {
-  const postUrl = buildPostUrl_(polyline, "580x420");
-  return postToMakeWebhook_(postUrl, name);
-}
-
-/** Helper 1: Construct postUrl for Make webhook */
-function buildPostUrl_(polyline, imgSize = "580x420") {
+function convertPolylineToMap_(polyline, name, imgSize) {
+  // Construct postUrl for Make webhook
   const propertyStore = PropertiesService.getScriptProperties();
   const apiKey = propertyStore.getProperty(SCRIPT_PROPERTY_KEYS.googleMapAPI); // Replace with your API Key
 
@@ -152,13 +135,11 @@ function buildPostUrl_(polyline, imgSize = "580x420") {
     path: `enc:${polyline}`,
   }
 
-  return MAPS_BASE_URL + queryObjToString_(queryObj);
-}
+  const postUrl = MAPS_BASE_URL + queryObjToString_(queryObj);
 
-/** Helper 2: Call Make webhook */
-function postToMakeWebhook_(postUrl, mapName) {
+  // Call Make webhook 
   const webhookUrl = "https://hook.us1.make.com/8obb3hb6bzwgi7s4nyi8yfghb3kxsksc";
-  const payload = JSON.stringify({ url: postUrl, name: mapName });
+  const payload = JSON.stringify({ url: postUrl, name: name });
 
   const options = {
     method: "post",
@@ -167,58 +148,10 @@ function postToMakeWebhook_(postUrl, mapName) {
   };
 
   const response = UrlFetchApp.fetch(webhookUrl, options);
-  logAsPL_(`Make Webhook Response: ${response.getContentText()}`, postToMakeWebhook_.name);
+  logAsPL_(`Make Webhook Response: ${response.getContentText()}`, convertPolylineToMap_.name);
+
   return response;
 }
-
-
-/**
- * Save the map of a Strava activity as `MAPS_FOLDER/<Unix Epoch timestamp>.png`
- * 
- * @deprecated  Use Make Webhook instead.
- * 
- * @param {string} polyline  A encoded polyline representing a path.
- * @param {integer} timestamp  Name to save file as.
- * 
- * @author [Jikael Gagnon](<jikael.gagnon@mail.mcgill.ca>)
- * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
- * 
- * @date  Dec 1, 2024
- * @update  Mar 27, 2025
- */
-function saveMapAsBlob_(polyline, timestamp) {
-  if (!polyline) {
-    return Logger.log('Map cannot be created: no polyline found for this activity');
-  }
-
-  const runMap = Maps.newStaticMap()
-    .setSize(800, 600) // Adjust size as needed
-    .setFormat(Maps.StaticMap.Format.PNG)
-    .setMapType(Maps.StaticMap.Type.ROADMAP) // Use ROADMAP for a minimalist style
-    .setPathStyle(3, "0x1155cc", "0x00000000") // Thin black route line, transparent fill
-    .addPath(polyline)
-    ;
-
-  // Get save locati on using timestamp
-  const saveLocation = getSaveLocation(timestamp);
-
-  // Save runMap as as image to specified location
-  const mapBlob = Utilities.newBlob(runMap.getMapImage(), 'image/png', saveLocation);
-  const file = DriveApp.createFile(mapBlob);
-
-  // Display success message
-  Logger.log(`Successfully saved map as ${saveLocation}`);
-
-  // Set permission to allow downloading
-  file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
-  return file.getDownloadUrl();
-
-  /** Helper function to get location of file to save */
-  function getSaveLocation(submissionTime) {
-    return MAPS_FOLDER + '/' + submissionTime.toString() + '.png'
-  }
-}
-
 
 
 function testCloudUpload() {
@@ -232,7 +165,7 @@ function testCloudUpload() {
   return;
   
   try {
-    const imageUrl = uploadImageToBucket_(blob, imageName);
+    const imageUrl = uploadImageToCloudStorageBucket_(blob, imageName);
     Logger.log("Uploaded image URL: " + imageUrl);
   } catch (e) {
     Logger.log("Error during upload: " + e);
@@ -240,18 +173,23 @@ function testCloudUpload() {
 }
 
 
-function uploadImageToBucket_(imageBlob, imageName) {
-  // Name of bucket in Google Cloud Storage
-  const STORAGE_BUCKET_NAME = 'run-map-storage.firebasestorage.app';
-  const BASE_UPLOAD_URL = "https://storage.googleapis.com/upload/storage/v1/b";
-
+/**
+ * Uploads given image blob to cloud storage under the provided name,
+ * and returns the resulting URL.
+ * 
+ * @param {string} imageBlob  Image data as a blob.
+ * @param {string} imageName  Name to save the image under.
+ * 
+ * @return {string|null}  URL of the image in cloud storage, or null if error occurred.
+ */
+function uploadImageToCloudStorageBucket_(imageBlob, imageName) {
   // Get service key to access cloud storage
   const store = PropertiesService.getScriptProperties();
   const propertyName = SCRIPT_PROPERTY_KEYS.googleCloudKey;
-  const SERVICE_ACCOUNT_KEY = JSON.parse(store.getProperty(propertyName));
+  const serviceAccountKey = JSON.parse(store.getProperty(propertyName));
 
   // Authenticate using the Service Account
-  const token = getGSCAccessToken_(SERVICE_ACCOUNT_KEY);
+  const token = getServiceAccountAccessToken_(serviceAccountKey);
 
   // Construct the upload URL
   const uploadUrl = `${BASE_UPLOAD_URL}/${STORAGE_BUCKET_NAME}/o?uploadType=media&name=${imageName}`;
@@ -277,13 +215,19 @@ function uploadImageToBucket_(imageBlob, imageName) {
     return null;
   }
 
-  logAsPL_('Image uploaded successfully!', uploadImageToBucket_.name);
+  logAsPL_('Image uploaded successfully!', uploadImageToCloudStorageBucket_.name);
   return `https://storage.googleapis.com/${STORAGE_BUCKET_NAME}/${imageName}`; // Return the public URL
 }
 
 
-// Helper function to get an access token using the service account key
-function getGSCAccessToken_(key) {
+/**
+ * Helper function to get an access token using the service account key
+ * 
+ * @param {Object}  Key for service account for Google Cloud.
+ * 
+ * @return {string}  Access token to cloud storage.
+ */
+function getServiceAccountAccessToken_(key) {
   var jwt = Utilities.base64EncodeWebSafe(JSON.stringify({
     "alg": "RS256",
     "typ": "JWT"
@@ -316,38 +260,4 @@ function getGSCAccessToken_(key) {
   var response = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", options);
   var json = JSON.parse(response.getContentText());
   return json.access_token;
-}
-
-
-/**
- * Adds a Blob to a Google Cloud Storage bucket.
- *
- * @param {Blob} BLOB - The Blob of the file to add to the bucket.
- * @param {string} BUCKET_NAME - The name of the bucket containing to add the file to.
- * @param {string} OBJECT_NAME - The name/path of the file to add.
- * @return {Object} objects#resource
- *
- * @example
- * const fileBlob = addBucketFile_(driveBlob, 'my-bucket', 'path/to/my/file.txt');
- */
-function addBucketFile_(BLOB, BUCKET_NAME, OBJECT_NAME) {
-  const bytes = BLOB.getBytes();
-  const baseUrl = "https://www.googleapis.com/upload/storage/v1/b";
-
-  // Base URL for Cloud Storage API
-  const url = `${baseUrl}/${BUCKET_NAME}/o?uploadType=media&name=${encodeURIComponent(OBJECT_NAME)}`;
-  try {
-    const response = UrlFetchApp.fetch(url, {
-      method: 'POST',
-      contentLength: bytes.length,
-      contentType: BLOB.getContentType(),
-      payload: bytes,
-      headers: {
-        "Authorization": "Bearer " + ScriptApp.getOAuthToken()
-      }
-    });
-    return JSON.parse(response.getContentText());
-  } catch (error) {
-    console.error('Error getting file:', error);
-  }
 }
