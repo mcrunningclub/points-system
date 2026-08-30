@@ -230,3 +230,81 @@ const BASE_UPLOAD_URL = "https://storage.googleapis.com/upload/storage/v1/b";
  * Name of bucket in Google Cloud Storage
  */
 const STORAGE_BUCKET_NAME = 'run-map-storage.firebasestorage.app';
+
+/**
+ * Name (of club) as it should appear on the email sender information
+ */
+const EMAIL_SENDER_NAME = "McGill Students Running Club";
+
+/**
+ * Name of the file containing template for post-run email (WITHOUT .html extension)
+ */
+const POST_RUN_TEMPLATE = "Post-Run Email v2";
+
+/**
+ * List of subject lines to choose from for post-run emails
+ */
+const SUBJECT_LINE_ARR = [
+  "Here's your post-run report! 🙌",
+  "Proof you're unstoppable 💥",
+  "You showed up. And crushed it 👟",
+  "Run complete. Let's see the results 🎉",
+  "Here's how you crushed it today 💪"
+];
+
+/**
+ * Randomly selected subject line at run-time
+ */
+const POINTS_EMAIL_SUBJECT_LINE = (() => {
+  let i = Math.floor(Math.random() * SUBJECT_LINE_ARR.length);
+  return SUBJECT_LINE_ARR[i];
+})();
+
+/**
+ * Hidden text for post-run emails (to display in preview?)
+ */
+const HIDDEN_PREHEADER_ARR = [
+  "Consistent work pays off {{FIRST_NAME}}! Your {{POINTS}} points await. See you next time!",
+]
+
+/** 
+ * Subject line for win-back emails
+ */
+const WINBACKEMAIL_SUBJECT = "We've missed you!";
+
+/**
+ * Name of the file containing template for win-back email (WITHOUT .html extension)
+ */
+const WINBACKEMAIL_TEMPLATE = "winbackemail";
+
+/**
+ * Mapping from certain email placeholder fields to the column in the ledger
+ * that contains data for that field
+ */
+const EMAIL_LEDGER_TARGETS = {
+  'FIRST_NAME': LEDGER_COL.FIRST_NAME,
+  'USE_METRIC': LEDGER_COL.USE_METRIC,
+  'TPOINTS': LEDGER_COL.TOTAL_POINTS,
+  'LAST_RUN_DATE': LEDGER_COL.LAST_RUN_DATE,
+  'TWEEKS': LEDGER_COL.RUN_STREAK,
+  'TRUNS': LEDGER_COL.TOTAL_RUNS,
+  'TOTAL_DISTANCE': LEDGER_COL.TOTAL_DISTANCE,
+  'TOTAL_ELEVATION': LEDGER_COL.TOTAL_ELEVATION,
+};
+
+/**
+ * Mapping keys in the Strava activity object to the corresponding email placeholder fields
+ */
+const EMAIL_PLACEHOLDER_LABELS = {
+  'distance': 'DISTANCE',
+  'moving_time': 'DURATION',
+  'average_speed': 'PACE',
+  'total_elevation_gain': 'ELEVATION',
+  'max_speed': 'MSPEED',
+  'mapUrl': 'MAP_URL',
+  'id': 'ACTIVITY_ID',
+  'points': 'POINTS',
+  'run_date' : 'RUN_DATE',
+  'level' : 'LEVEL',
+  'headrunners' : 'HEADRUNNERS',
+}

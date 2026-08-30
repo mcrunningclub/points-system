@@ -27,7 +27,7 @@ limitations under the License.
  * @update  Oct 27, 2025
  */
 function createMapForRow(row = getValidLastRow_(LOG_SHEET)){
-  const activity = checkExistingStravaActivity_(row);
+  const activity = getExistingStravaActivity_(row);
   if(!activity) throw Error("No activity detected");
 
   const timestamp = getTimestampInRow_(row);

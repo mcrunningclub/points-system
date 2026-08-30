@@ -18,88 +18,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/** VERIFY CONSTANTS AND UPDATE (IF APPLICABLE) */
-const EMAIL_SENDER_NAME = "McGill Students Running Club";
-const POST_RUN_TEMPLATE = "Post-Run Email v2";
-
-const SUBJECT_LINE_ARR = [
-  "Here's your post-run report! 🙌",
-  "Proof you're unstoppable 💥",
-  "You showed up. And crushed it 👟",
-  "Run complete. Let's see the results 🎉",
-  "Here's how you crushed it today 💪"
-];
-
-const HIDDEN_PREHEADER_ARR = [
-  "Consistent work pays off {{FIRST_NAME}}! Your {{POINTS}} points await. See you next time!",
-
-]
-
-// Randomly select a subject line at run-time
-const POINTS_EMAIL_SUBJECT_LINE = (() => {
-  let i = Math.floor(Math.random() * SUBJECT_LINE_ARR.length);
-  return SUBJECT_LINE_ARR[i];
-})();
-
-
-// Constants for win-back email
-const WINBACKEMAIL_SUBJECT = "We've missed you!";
-const WINBACKEMAIL_TEMPLATE = "winbackemail";
-
-const EMAIL_LEDGER_TARGETS = {
-  'FIRST_NAME': LEDGER_COL.FIRST_NAME,
-  'USE_METRIC': LEDGER_COL.USE_METRIC,
-  'TPOINTS': LEDGER_COL.TOTAL_POINTS,
-  'LAST_RUN_DATE': LEDGER_COL.LAST_RUN_DATE,
-  'TWEEKS': LEDGER_COL.RUN_STREAK,
-  'TRUNS': LEDGER_COL.TOTAL_RUNS,
-  'TOTAL_DISTANCE': LEDGER_COL.TOTAL_DISTANCE,
-  'TOTAL_ELEVATION': LEDGER_COL.TOTAL_ELEVATION,
-};
-
-const EMAIL_PLACEHOLDER_LABELS = {
-  'distance': 'DISTANCE',
-  'moving_time': 'DURATION',
-  'average_speed': 'PACE',
-  'total_elevation_gain': 'ELEVATION',
-  'max_speed': 'MSPEED',
-  'mapUrl': 'MAP_URL',
-  'id': 'ACTIVITY_ID',
-  'points': 'POINTS',
-  'run_date' : 'RUN_DATE',
-  'level' : 'LEVEL',
-  'headrunners' : 'HEADRUNNERS',
-}
-
-
-/** 
- * Testing Runtime Functions
+/**
+ * Puts given messages (status of sending email) into the log sheet in the Email Status column
+ * 
+ * @param {string[]} messages  Array of messages to log
+ * @param {SpreadsheetApp.Sheet} logSheet  Log sheet object
+ * @param {integer} row  Row to log messages in
  */
-
-function fTest() {
-  const items = ["apple", "banana", "cherry"];
-
-  // Using .bind() to pre-set the first argument
-  items.forEach(logItemWithPrefix.bind(null, "Fruit"));
-
-  function logItemWithPrefix(prefix, item, index) {
-    console.log(`${prefix} Index ${index}: ${item}`);
-  }
-}
-
-
-function logStatus_(messageArr, logSheet = LOG_SHEET, thisRow = getValidLastRow_(logSheet)) {
+function logStatus_(messages, logSheet, row) {
   // Update the status of sending email
   const currentTime = Utilities.formatDate(new Date(), TIMEZONE, '[dd-MMM HH:mm:ss] ---');
-  const statusRange = logSheet.getRange(thisRow, LOG_COL.EMAIL_STATUS);
+  const statusRange = logSheet.getRange(row, LOG_COL.EMAIL_STATUS);
 
   // Append status to previous value (if non-empty)
   const previousValue = statusRange.getValue() ? statusRange.getValue() + '\n' : '';
-  const updatedStatus = `${previousValue}${currentTime}\n${messageArr.join('\n')}`
+  const updatedStatus = `${previousValue}${currentTime}\n${messages.join('\n')}`
   statusRange.setValue(updatedStatus);
 }
 
-
+/**
+ * Checks if email sending is allowed according to script properties and throws error if not.
+ */
 function isEmailSendingAllowed_() {
   const store = PropertiesService.getScriptProperties();
   const isSendAllowed = store.getProperty(SCRIPT_PROPERTY_KEYS.isSendAllowed);
@@ -114,8 +53,8 @@ function isEmailSendingAllowed_() {
  *
  * @trigger  New headrun submission  // OLD: The 1st and 14th of every month
  * 
- * @param {Spreadsheet.sheet} logSheet
- * @param {integer} row
+ * @param {Spreadsheet.sheet} logSheet  Log sheet object
+ * @param {integer} row  Row with the activity to send email for
  *
  * @author [Charles Villegas](<charles.villegas@mail.mcgill.ca>) & ChatGPT
  * @author2 [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
@@ -124,11 +63,11 @@ function isEmailSendingAllowed_() {
  * @update  Sep 25, 2025
  */
 
-function sendStatsEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSheet)) {
-  const funcName = sendStatsEmail.name;
+function checkAndSendPostRunEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSheet)) {
+  const funcName = checkAndSendPostRunEmail.name;
   // Prevent email sent by wrong user
   if (getCurrentUserEmail_() != MCRUN_EMAIL) {
-    throw new Error(`[PL#${sendStatsEmail.name}] Please switch to the McRUN Google Account before sending emails`);
+    throw new Error(`[PL#${checkAndSendPostRunEmail.name}] Please switch to the McRUN Google Account before sending emails`);
   }
 
   isEmailSendingAllowed_();    // throws error if not allowed
@@ -162,8 +101,8 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSh
   const recipientArr = splitInfo(attendees)?.emails;
   const copyRecipientArr = headrunnerInfo?.emails;
 
-  logAsPL_(`Now trying to execute '${emailMemberStats_.name}'...`, funcName);
-  const returnStatus = emailMemberStats_(recipientArr, activityStats);
+  logAsPL_(`Now trying to execute '${sendPostRunEmailsForActivity_.name}'...`, funcName);
+  const returnStatus = sendPostRunEmailsForActivity_(recipientArr, activityStats);
 
   // Print log and save return status of `emailMemberStats`
   console.log(activityStats);
@@ -194,8 +133,15 @@ function sendStatsEmail(logSheet = GET_LOG_SHEET(), row = getValidLastRow_(logSh
 }
 
 
-/** Helper 1: Send member stats to recipient */
-function emailMemberStats_(recipients, activity) {
+/** 
+ * Sends post run email to all recipients for the specified activity
+ * 
+ * @param {string[]} recipients  Email addresses to send email to
+ * @param {Object} activity  Activity stats
+ * 
+ * @return {string[]}  List of status messages indicating whether each email was sent successfully
+ */
+function sendPostRunEmailsForActivity_(recipients, activity) {
   // Get all names and point values from points, and names and emails from emails
   // Leave ledgerData as Array instead of Object for optimization
   const ledgerData = GET_LEDGER();
@@ -218,7 +164,7 @@ function emailMemberStats_(recipients, activity) {
     const preferredStats = memberTotalStats['USE_METRIC'] ? metricStats : imperialStats;
 
     // Email report and log response
-    res.push(emailPostRunReport_(email, { ...memberTotalStats, ...preferredStats }));
+    res.push(sendPostRunEmail_(email, { ...memberTotalStats, ...preferredStats }));
   }
 
   return res;
@@ -245,8 +191,16 @@ function emailMemberStats_(recipients, activity) {
   }
 }
 
-
-function emailPostRunReport_(email, memberStats) {
+/**
+ * Creates post run email from member stats and template,
+ * sends it to given email address
+ * 
+ * @param {string} email  Email address of member
+ * @param {string: *} memberStats  Object containing member's information
+ * 
+ * @returns {string}  Confirmation message
+ */
+function sendPostRunEmail_(email, memberStats) {
   // Create template to populate
   const template = HtmlService.createTemplateFromFile(POST_RUN_TEMPLATE);
   
@@ -294,13 +248,13 @@ function emailPostRunReport_(email, memberStats) {
 
   // Log confirmation for the sent email with member stats
   const confirmation = `Stats email sent to ${email} with ${useMetric ? 'metric' : 'imperial'} units.`;
-  logAsPL_(confirmation, emailPostRunReport_.name);
+  logAsPL_(confirmation, sendPostRunEmail_.name);
   return confirmation;
 }
 
 
 /**
- * Automatically triggered to send reminder email to members whose
+ * Automatically triggered to send win back email to members whose
  * "last run" date is over 2 weeks ago
  * 
  * @trigger every Monday
@@ -341,7 +295,7 @@ function checkAndSendWinBackEmail() {
 
       // send reminder email if needed
       if (lastRunAsDate < dateThreshold) {
-        sendWinBackEmail_(member[FNAME_COL], member[EMAIL_COL]);
+        sendWinBackEmail_(member[EMAIL_COL], member[FNAME_COL]);
       }
     }
   }
@@ -349,7 +303,7 @@ function checkAndSendWinBackEmail() {
 
 
 /**
- * Creates reminder email from member name and template,
+ * Creates win back email from member name and template,
  * sends it to given address
  * 
  * @param {String} name Member's first name
@@ -360,7 +314,7 @@ function checkAndSendWinBackEmail() {
  * 
  * @date 2025/03/30
  */
-function sendWinBackEmail_(name, email) {
+function sendWinBackEmail_(email, name) {
   // set up email using template
   const template = HtmlService.createTemplateFromFile(WINBACKEMAIL_TEMPLATE);
   template.FIRST_NAME = name;

@@ -46,7 +46,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
   }
 
   // Check if Strava activity stored in sheet
-  let activity = checkExistingStravaActivity_(row);
+  let activity = getExistingStravaActivity_(row);
   if (activity) {
     logAsPL_(`Strava activity found in log for row ${row}!`, funcName);
     return activity;
@@ -104,7 +104,7 @@ function findAndStoreStravaActivity(row = getValidLastRow_(LOG_SHEET)) {
  * @update  Apr 1, 2025
  */
 
-function checkExistingStravaActivity_(row = getValidLastRow_(LOG_SHEET)) {
+function getExistingStravaActivity_(row = getValidLastRow_(LOG_SHEET)) {
   const sheet = GET_LOG_SHEET();
   const startCol = LOG_COL.STRAVA_ACTIVITY_ID;
   const endCol = LOG_COL.MAP_URL;

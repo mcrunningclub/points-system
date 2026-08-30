@@ -129,7 +129,7 @@ function testRuntime() {
   //  - 3 recipients : 8503 ms (forming blob for every recipient)
   //  - 3 recipients: 6307ms (generating blob once)
 
-  sendStatsEmail();
+  checkAndSendPostRunEmail();
   
   // Record the end time
   const endTime = new Date().getTime();

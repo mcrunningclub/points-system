@@ -14,22 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const TRIGGER_FUNC = runStravaChecker.name;
+const TRIGGER_FUNC = checkForStravaActivities.name;
 const TRIGGER_BASE_ID = 'stravaTriggerRow';
-const STRAVA_CHECK_MAX_TRIES = 3;
-const TRIGGER_FREQUENCE = 45;  // Minutes
+const MAX_STRAVA_CHECKS = 3;
+const TRIGGER_FREQUENCY = 45;  // Minutes
 
-
+/**
+ * Handler for GET events sent to web app deployment of this script
+ * 
+ * Checks for authorization, then sets trigger to check for Strava activity
+ * for the row specified in the request.
+ * 
+ * @param {Object} e  GET request object, should contain keys 'key' and 'rowNum
+ * @return {TextOutput}  Message indicating status of request
+ */
 function doGet(e) {
   // 1. Check if access is authorized with key
   if (e.parameter.key !== getSecretWebKey_()) {
-    return ContentService.createTextOutput(addMsg("Unauthorized! Please verify key."));
+    return ContentService.createTextOutput("Unauthorized! Please verify key.");
   }
 
   // 2. Get 'rowNum' from URL and validate input
   let rowNum = e.parameter.rowNum;
   if (!rowNum || isNaN(rowNum)) {
-    return ContentService.createTextOutput(addMsg("Invalid or missing 'rowNum' parameter."));
+    return ContentService.createTextOutput("Invalid or missing 'rowNum' parameter.");
   }
 
   // 3. Parse for row number
@@ -37,28 +45,30 @@ function doGet(e) {
   Logger.log(`[PL#doGet] Received in 'doGet' row number: ${rowNum}`);
 
   // 4. Run handler function and return output message
-  createNewStravaTrigger(rowNum);
-  return ContentService.createTextOutput(addMsg(`Trigger set for row ${rowNum}`));
+  createStravaTrigger_(rowNum);
+  return ContentService.createTextOutput(`Trigger set for row ${rowNum}`);
 
   /** Helper: get secret key in script properties */
   function getSecretWebKey_() {
     const property = 'WEB_APP_KEY';
     return PropertiesService.getScriptProperties().getProperty(property);
   }
-
-  /** Helper: append values of 'e' to 'msg' for debugging */
-  function addMsg(msg) {
-    return msg + '\n\n' + JSON.stringify(e);  // Logs SECRET KEY!!
-  }
 }
 
 
-function createNewStravaTrigger(row = getValidLastRow_(LOG_SHEET)) {
+/**
+ * Creates a trigger to check for Strava activity for a given row, and stores its information
+ * in script properties. The property key includes the row number and its values contains the 
+ * number of tries, trigger ID, and row number.
+ * 
+ * @param {integer} row  Row to check for activity for. Defaults to last row
+ */
+function createStravaTrigger_(row = getValidLastRow_(LOG_SHEET)) {
   const scriptProperties = PropertiesService.getScriptProperties();
 
   const trigger = ScriptApp.newTrigger(TRIGGER_FUNC)
     .timeBased()
-    .everyMinutes(TRIGGER_FREQUENCE)
+    .everyMinutes(TRIGGER_FREQUENCY)
     .create();
 
   // Store trigger details using rowNumber as key
@@ -73,12 +83,16 @@ function createNewStravaTrigger(row = getValidLastRow_(LOG_SHEET)) {
   const dataStr = JSON.stringify(triggerData);
 
   scriptProperties.setProperty(key, dataStr);
-  logAsPL_(`Created new trigger '${key}', running every ${TRIGGER_FREQUENCE} min\n${dataStr}`);
+  logAsPL_(`Created new trigger '${key}', running every ${TRIGGER_FREQUENCY} min\n${dataStr}`);
 }
 
 
-// This function will be repeatedly called by the trigger
-function runStravaChecker() {
+/**
+ * Function called by Strava triggers. Checks for Strava activity for all the rows that currently
+ * have active triggers according to script properties, and increments the number of runs for 
+ * each one. If max number of tries reached, deletes the trigger.
+ */
+function checkForStravaActivities() {
   const scriptProperties = PropertiesService.getScriptProperties();
   const allProps = scriptProperties.getProperties();
 
@@ -90,20 +104,22 @@ function runStravaChecker() {
     console.log(`Trigger data`, triggerData);
 
     if (isStravaFound(rowNumber) && isEmailsSent(rowNumber)) {
-      // If found, clean up trigger and data in script properties
-      cleanUpTrigger(key, triggerId, triggerData);
+      // Activity found during last try, clean up trigger and data in script properties
+      cleanUpTrigger(key);
       Logger.log(`✅ Activity found for row ${rowNumber} after ${tries} tries`);
     }
-    else if (tries <= STRAVA_CHECK_MAX_TRIES) {
-      // Limit not reach, check again and increment 'tries'
-      incrementTries(key, triggerData);
+    else if (tries <= MAX_STRAVA_CHECKS) {
+      // Activity not found and max tries not reached, check again
+      Logger.log(`Strava activity check #${triggerData.tries} for row ${rowNumber}`);
+      triggerData.tries++;
+      scriptProperties.setProperty(key, JSON.stringify(triggerData));
       Logger.log(`Incremented tries for Strava trigger. Now sending stats email`);
-      sendStatsEmail(GET_LOG_SHEET(), rowNumber);   // This checks for Strava activity and sends post-run email if success
+      checkAndSendPostRunEmail(GET_LOG_SHEET(), rowNumber);   // This checks for Strava activity and sends post-run email if success
     }
     else {
-      // Send email notification if limit is reached
-      cleanUpTrigger(key, triggerId, triggerData);
-      alertTriggerStravaNotFound_(rowNumber, tries);
+      // Max tries reached, clean up trigger and send email notifying activity not found
+      cleanUpTrigger(key);
+      alertStravaActivityNotFound_(rowNumber, tries);
       Logger.log(`❌ Max tries reached for row ${rowNumber}, sending email and stopping checks`);
     }
   }
@@ -115,46 +131,55 @@ function runStravaChecker() {
     return value.toString().trim() != '';
   }
 
+  /** Helper: check if post run email already sent */
   function isEmailsSent(row) {
     const sheet = GET_LOG_SHEET();
     const value = sheet.getRange(row, LOG_COL.EMAIL_STATUS).getValue();
     return value.toString().trim() != '';
   }
-
-  /** Helper: increment tries and log data */
-  function incrementTries(key, triggerData) {
-    Logger.log(`Strava activity check #${triggerData.tries} for row ${triggerData.rowNumber}`);
-    triggerData.tries++;
-    scriptProperties.setProperty(key, JSON.stringify(triggerData));
-  }
-
-  /** Helper: remove trigger and data in script properties */
-  function cleanUpTrigger(key, triggerId, triggerData) {
-    if (!deleteTriggerById(triggerId)) {
-      alertTriggerIdNotFound_(triggerId, triggerData);
-    }
-    // Delete property whether trigger is found or not
-    scriptProperties.deleteProperty(key);
-  }
-
-  /** Helper: delete a trigger by ID */
-  function deleteTriggerById(triggerId) {
-    const triggers = ScriptApp.getProjectTriggers();
-
-    for (let trigger of triggers) {
-      if (trigger.getUniqueId() === triggerId) {
-        ScriptApp.deleteTrigger(trigger);
-        Logger.log(`Trigger with id ${triggerId} deleted!`);
-        return true;
-      }
-    }
-
-    // Notify club of unidentified trigger
-    console.error(`Unable to find trigger with id #${triggerId}`);
-    return false;
-  }
 }
 
+/** 
+ * Remove trigger and its property in script properties 
+ * 
+ * @param {string} propertyKey  Key of the script property corresponding to the trigger to delete
+ */
+function cleanUpTrigger(propertyKey) {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const allProps = scriptProperties.getProperties();
+
+  const triggerData = allProps[propertyKey];
+  const triggerId = triggerData.triggerId;
+
+  if (!deleteTriggerById_(triggerId)) {
+    alertTriggerNotFound_(triggerData);
+  }
+  // Delete property whether trigger is found or not
+  scriptProperties.deleteProperty(propertyKey);
+}
+
+/** 
+ * Delete a trigger given its ID 
+ * 
+ * @param {string} id  ID of the trigger to delete
+ * 
+ * @returns {boolean}  True if successfully deleted, otherwise false
+ */
+function deleteTriggerById_(id) {
+  const triggers = ScriptApp.getProjectTriggers();
+
+  for (let trigger of triggers) {
+    if (trigger.getUniqueId() === id) {
+      ScriptApp.deleteTrigger(trigger);
+      Logger.log(`Trigger with id ${id} deleted!`);
+      return true;
+    }
+  }
+
+  // Notify club of unidentified trigger
+  console.error(`Unable to find trigger with id #${id}`);
+  return false;
+}
 
 /**
  * Removes all Strava triggers in ScriptApp.
@@ -164,7 +189,7 @@ function runStravaChecker() {
  * @update  Nov 16, 2025
  */
 
-function deleteStravaTriggers() {
+function deleteAllStravaTriggers() {
   const triggers = ScriptApp.getProjectTriggers();
 
   triggers.forEach(trigger => {
@@ -179,16 +204,24 @@ function deleteStravaTriggers() {
 }
 
 
-function alertTriggerIdNotFound_(triggerId, value) {
+/**
+ * Sends email to club account saying that a (Strava) trigger was not found and
+ * so could not be deleted.
+ * 
+ * @param {Object} triggerData  Script property value corresponding to the trigger
+ */
+function alertTriggerNotFound_(triggerData) {
+  const triggerId = triggerData.triggerId;
+
   MailApp.sendEmail({
     to: MCRUN_EMAIL,
-    subject: `Trigger id not found - Points Ledger Code`,
+    subject: `Trigger not found - Points Ledger Code`,
     body: `
-    The script attempted to delete trigger with id ${triggerId} in 'Points Ledger'.
+    The script attempted to delete trigger with id ${triggerId} in 'Points Ledger' but was unsuccessful.
 
-    Properties service stored following value... Warning: values unrelated to trigger ${triggerId}.
+    Properties stored following value... Warning: values unrelated to trigger ${triggerId}.
       
-    ${JSON.stringify(value)}
+    ${JSON.stringify(triggerData)}
       
     Please verify manually, and update properties script if required.
     
@@ -196,10 +229,16 @@ function alertTriggerIdNotFound_(triggerId, value) {
   });
 }
 
-function alertTriggerStravaNotFound_(rowNumber, tries) {
+/**
+ * Sends email to club account saying that a Strava activity could not be found.
+ * 
+ * @param {integer} rowNumber  Row that the activity was supposed to be added to
+ * @param {integer} tries  Number of attempts that the script made to find the activity
+ */
+function alertStravaActivityNotFound_(rowNumber, tries) {
   MailApp.sendEmail({
     to: MCRUN_EMAIL,
-    subject: `Strava Activity Not Found - Row #${rowNumber}`,
+    subject: `Strava Activity Not Found - Points Ledger Code`,
     body: `
     The script attempted ${tries} times to find a Strava activity for row ${rowNumber} in 'Points Ledger' unsuccessfully.
     
