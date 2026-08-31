@@ -167,7 +167,7 @@ function getLedgerData_(numCols = LEDGER_COL_COUNT) {
 /**
  * Get ledger data of member using their email.
  * 
- * @param {string}  Member email address.
+ * @param {string} email  Member email address.
  * @param {Object[][]} ledgerData  Ledger data object, from GET_LEDGER_()
  * @return {Array}  Values of the row corresponding to specified member, or empty array if not found.
  */
@@ -180,12 +180,8 @@ function getLedgerEntry_(email, ledgerData) {
  * Recursive function to search for entry by email in `sheet` using binary search.
  * Returns row index of `email` in GSheet (1-indexed), or null if not found.
  * 
- * @param {string} email  The email address to search for in `sheet`.
- * @param {SpreadsheetApp.Sheet} sheet  The sheet to search in.
- * @param {number} [start=2]  The starting row index for the search (1-indexed). 
- *                            Defaults to 2 (the second row) to avoid the header row.
- * @param {number} [end=MASTER_SHEET.getLastRow()]  The ending row index for the search. 
- *                                                  Defaults to the last row in the sheet.
+ * @param {string} email  The email address to search for.
+ * @param {Objects[][]} ledger  Array containing rows from ledger sheet.
  * 
  * @return {number|null}  Returns the 1-indexed row number where the email is found, 
  *                        or `null` if the email is not found.
