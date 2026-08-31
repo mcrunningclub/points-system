@@ -1,7 +1,7 @@
 /**
  * Extracts all literal tags from HTML file using regex.
  * 
- * Used to debug HTML file.
+ * Used to debug HTML file. Must change file name variable inside function before running.
  * 
  * @author [Andrey Gonzalez] (<andrey.gonzalez@mail.mcgill.ca>) & ChatGPT
  * 
@@ -29,66 +29,6 @@ function extractTagsFromProjectFile() {
   Logger.log("Extracted Tags: " + JSON.stringify(unique));
 }
 
-function extractPlaceholders() {
-  const str = STATS_EMAIL_OBJ.text;
-  const matches = [...str.matchAll(/{{(.*?)}}/g)].map(match => match[1]);
-  console.log([...new Set(matches)])
-}
-
-function createInlineImage_(fileUrl, blobKey) {
-  // Extract file id from url. 
-  // For cases like .../file/d/FILE_ID/... and ...&id=FILE_ID...
-  const match = fileUrl.match(/(?:\/file\/d\/|[?&]id=)([\w-]+)/);
-  const fileId = match[1];
-
-  // Fetch the image using file id and set name for reference
-  // Create inline image object with assigned CID
-  const mapFile = DriveApp.getFileById(fileId);
-  return mapFile.getBlob().setName(blobKey);
-}
-
-
-function saveFullDraftHtml() {
-  const drafts = Gmail.Users.Drafts.list("me").drafts;
-  if (!drafts || !drafts.length) return;
-
-  const index = 2;
-
-  const draftId = drafts[index].id;
-  const draft = Gmail.Users.Drafts.get("me", draftId, { format: "full" });
-
-  let htmlContent = "";
-
-  function findHtmlPart(part) {
-    if (part.mimeType === "text/html" && part.body && part.body.data) {
-      if (Array.isArray(part.body.data)) {
-        // Case: already an array of character codes
-        return String.fromCharCode.apply(null, part.body.data);
-      } else {
-        // Case: still base64url string
-        const b64 = part.body.data.replace(/-/g, '+').replace(/_/g, '/');
-        const decoded = Utilities.base64Decode(b64);
-        return Utilities.newBlob(decoded).getDataAsString("UTF-8");
-      }
-    }
-    if (part.parts) {
-      for (const p of part.parts) {
-        const result = findHtmlPart(p);
-        if (result) return result;
-      }
-    }
-    return null;
-  }
-
-  htmlContent = findHtmlPart(draft.message.payload);
-
-  if (htmlContent) {
-    DriveApp.createFile(`full-draft-${index}.html`, htmlContent, MimeType.HTML);
-  } else {
-    Logger.log("No HTML part found.");
-  }
-}
-
 
 /**
  * Generate html version of email found in draft using its subject line.
@@ -101,22 +41,33 @@ function saveFullDraftHtml() {
 function saveDraftAsHtml() {
   const subjectLine = "Report Test 🙌" //'Here\'s your post-run report! 🙌';
   generateHtmlFromDraft_(subjectLine);
+}
 
-  function generateHtmlFromDraft_(subjectLine) {
-    const datetime = Utilities.formatDate(new Date(), TIMEZONE, 'MMM-dd\'T\'hh.mm');
-    const baseName = subjectLine.replace(/ /g, '-').toLowerCase();
 
-    // Create filename for html file
-    const fileName = `${baseName}-${datetime}.html`;
+/**
+ * Generate html version of email found in draft using its subject line.
+ * 
+ * Saves html under {draft subject}-{datetime}-html in Google Drive.
+ * 
+ * @param {string} subjectLine  Subject line of target draft.
+ * 
+ * @author [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>)
+ * 
+ */
+function generateHtmlFromDraft_(subjectLine) {
+  const datetime = Utilities.formatDate(new Date(), TIMEZONE, 'MMM-dd\'T\'hh.mm');
+  const baseName = subjectLine.replace(/ /g, '-').toLowerCase();
 
-    // Find template in drafts and get email objects
-    const emailTemplate = getGmailTemplateFromDrafts_(subjectLine);
-    const msgObj = fillInTemplateFromObject_(emailTemplate.message, {});
+  // Create filename for html file
+  const fileName = `${baseName}-${datetime}.html`;
 
-    // Save html file in drive
-    DriveApp.createFile(fileName, msgObj.html);
-    Logger.log(`Created HTML file '${fileName}'`);
-  }
+  // Find template in drafts and get email objects
+  const emailTemplate = getEmailTemplateFromDrafts_(subjectLine);
+  const msgObj = fillInEmailTemplate_(emailTemplate.message, {});
+
+  // Save html file in drive
+  DriveApp.createFile(fileName, msgObj.html);
+  Logger.log(`Created HTML file '${fileName}'`);
 }
 
 
@@ -152,7 +103,7 @@ function testRuntime() {
  * @return {object} containing the subject, plain and html message body and attachments
 */
 
-function getGmailTemplateFromDrafts_(subjectLine = DRAFT_SUBJECT_LINE){
+function getEmailTemplateFromDrafts_(subjectLine){
   // Verify if McRUN draft to search
   if (Session.getActiveUser().getEmail() != MCRUN_EMAIL) {
     return Logger.log('Change Gmail Account');
@@ -264,3 +215,37 @@ function subjectFilter_(subjectLine){
   }
 }
 
+
+/**
+ * Fill template string with data object and add current year.
+ * 
+ * @author  Martin Hawksey (2022)
+ * @update  [Andrey Gonzalez](<andrey.gonzalez@mail.mcgill.ca>) (2025)
+ * @see https://stackoverflow.com/a/378000/1027723
+ * 
+ * @param {string} template string containing {{}} markers which are replaced with data
+ * @param {object} data object used to replace {{}} markers
+ * @return {object} JSON-formatted message replaced with data
+*/
+
+function fillInEmailTemplate_(template, data) {
+  // We have two templates one for plain text and the html body
+  // Stringifing the object means we can do a global replace
+  let templateStr = JSON.stringify(template);
+
+  // Add year for copyright message
+  data['THIS_YEAR'] = String(new Date().getFullYear());
+
+  templateStr = templateStr.replace(/{{[^{}]+}}/g, key => { 
+    return escapeData_(data[key.replace(/[{}]+/g, "")] || "");
+  });
+
+  return JSON.parse(templateStr);
+
+  /* for (const [key, value] of Object.entries(data)) {
+    const safeValue = escapeData_(value) || "";
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    templateStr = templateStr.replace(regex, safeValue);
+  } */
+
+}

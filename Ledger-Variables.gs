@@ -308,3 +308,18 @@ const EMAIL_PLACEHOLDER_LABELS = {
   'level' : 'LEVEL',
   'headrunners' : 'HEADRUNNERS',
 }
+
+/**
+ * String to put in the key of all script properties relating to a Strava trigger
+ */
+const TRIGGER_BASE_ID = 'stravaTriggerRow';
+
+/**
+ * Maximum number of tries to find a Strava activity before triggers get deleted
+ */
+const MAX_STRAVA_CHECKS = 3;
+
+/**
+ * Strava trigger frequency in minutes
+ */
+const TRIGGER_FREQUENCY = 45;

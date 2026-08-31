@@ -14,11 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const TRIGGER_FUNC = checkForStravaActivities.name;
-const TRIGGER_BASE_ID = 'stravaTriggerRow';
-const MAX_STRAVA_CHECKS = 3;
-const TRIGGER_FREQUENCY = 45;  // Minutes
-
 /**
  * Handler for GET events sent to web app deployment of this script
  * 
@@ -66,7 +61,7 @@ function doGet(e) {
 function createStravaTrigger_(row = getValidLastRow_(LOG_SHEET)) {
   const scriptProperties = PropertiesService.getScriptProperties();
 
-  const trigger = ScriptApp.newTrigger(TRIGGER_FUNC)
+  const trigger = ScriptApp.newTrigger(checkForStravaActivities.name)
     .timeBased()
     .everyMinutes(TRIGGER_FREQUENCY)
     .create();
